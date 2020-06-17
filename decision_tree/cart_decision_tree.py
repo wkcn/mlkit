@@ -4,8 +4,6 @@ CART决策树
 对于离散特征，分为两份{x|x==s}和{x|x!=s}
 '''
 from collections import defaultdict
-
-from collections import defaultdict
 import numpy as np
 import pandas
 from decision_tree import read_csv, Gini

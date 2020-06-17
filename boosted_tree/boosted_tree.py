@@ -17,6 +17,7 @@ class BoostedTree:
         self.threshold = threshold
         self.nodes = []
     def train(self, X, Y):
+        assert len(self.nodes) == 0
         assert X.ndim == 1
         xs = np.sort(np.unique(X))
         xs = (xs[1:] + xs[:-1]) / 2.0
@@ -33,6 +34,7 @@ class BoostedTree:
                 Y1, Y2 = RY[R1], RY[R2]
                 c1 = np.mean(Y1)
                 c2 = np.mean(Y2)
+                # loss
                 ms = np.square(Y1 - c1).sum() + np.square(Y2 - c2).sum()
                 if best_m is None or best_m > ms: 
                     best_m = ms

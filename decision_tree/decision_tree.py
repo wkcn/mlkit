@@ -1,3 +1,7 @@
+'''
+决策树
+ID3和C4.5
+'''
 from collections import defaultdict
 import numpy as np
 import pandas

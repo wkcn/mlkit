@@ -8,10 +8,11 @@ def read_csv(fname):
 
 
 class NaiveBayes:
-    def __init__(self):
+    def __init__(self, lamb=0):
         self.P_Y = None
         self.P_X_cond_Y = None
         self.num_features = None
+        self.lamb = lamb
     def train(self, X, Y):
         assert self.num_features is None
         assert X.ndim == 2
@@ -27,7 +28,9 @@ class NaiveBayes:
                 for y in ys:
                     mask = (Xj == xj) & (Y == y)
                     pair = (xj, y)
-                    self.P_X_cond_Y[j][pair] = np.count_nonzero(mask) / np.count_nonzero(Y == y)
+                    self.P_X_cond_Y[j][pair] = \
+                        (np.count_nonzero(mask) + self.lamb) / \
+                        (np.count_nonzero(Y == y) + len(xjs) * self.lamb)
         print("Train over")
     def predict(self, X):
         Y = [None for _ in range(len(X))] 
@@ -53,7 +56,20 @@ if __name__ == '__main__':
     fname = '../data/table4.1.csv'
     data = read_csv(fname)
     X, Y = data[:, :-1], data[:, -1]
+
+    print('lambda = 0')
     bayes = NaiveBayes()
+    bayes.train(X, Y)
+    PY = bayes.predict(X)
+    acc = np.count_nonzero(Y == PY) / len(Y)
+    print(f"Accuracy: {acc}")
+    predict = bayes.predict_one([2, 'S'])
+    print(f"input: [2, 'S'], predict: {predict}")
+
+    print('=' * 16)
+
+    print('lambda = 1')
+    bayes = NaiveBayes(lamb=1)
     bayes.train(X, Y)
     PY = bayes.predict(X)
     acc = np.count_nonzero(Y == PY) / len(Y)

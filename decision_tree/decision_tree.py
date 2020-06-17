@@ -38,6 +38,11 @@ class ID3:
         # g(D, A) = H(D) - H(D|A)
         return ID3.H(Y) - ID3.CondH(Y, X)
 
+class C4_5(ID3):
+    @staticmethod
+    def Gain(Y, X):
+        # 信息增益比
+        return ID3.Gain(Y, X) / ID3.H(Y)
 
 class Node:
     def __init__(self, name=None, cls=None):
@@ -141,6 +146,8 @@ if __name__ == '__main__':
     columns, data = read_csv(fname)
     X, Y = data[:, 1:-1], data[:, -1]
     header = columns[1:-1]
-    dt = DecisionTree(ID3)
+    # method = ID3
+    method = C4_5
+    dt = DecisionTree(method)
     dt.train(X, Y, header)
     print(dt)

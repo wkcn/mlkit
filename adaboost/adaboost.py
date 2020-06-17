@@ -23,7 +23,7 @@ class Node:
         return f'[am: {self.am:.5}] {{x| x <= {self.s}}}: {self.c1}, {{x| x > {self.s}}}: {self.c2}'
 
 
-class Adaboost:
+class AdaBoost:
     def __init__(self):
         self.nodes = list()
     def train(self, X, Y):
@@ -98,6 +98,6 @@ if __name__ == '__main__':
     fname = '../data/table8.1.csv'
     data = read_csv(fname)
     X, Y = data[:, 0], data[:, 1]
-    ab = Adaboost()
+    ab = AdaBoost()
     ab.train(X, Y)
     print(ab)

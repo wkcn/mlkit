@@ -37,7 +37,7 @@ CSRMatrix<T>::CSRMatrix(dim_t rows, dim_t cols) {
   CHECK_GE(cols, 0);
   rows_ = rows;
   cols_ = cols;
-  offsets.resize(rows_ + 1, 0);
+  offsets_.resize(rows_ + 1, 0);
 }
 
 template<typename T>
@@ -64,7 +64,7 @@ void CSRMatrix<T>::reset(const std::vector<dim_t> &row,
         indices_.push_back(p.first);
         values_.push_back(p.second);
       }
-      last_offset += values_.size();
+      last_offset += vs.size();
     }
   }
   TEST_EQ(last_offset, values_.size());

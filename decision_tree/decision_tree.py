@@ -135,8 +135,20 @@ class DecisionTree:
                 best = v
                 best_label = k
         return best_label
-    def predict(self, X):
-        pass
+    def predict(self, X, header):
+        mheader = dict((name, i) for i, name in enumerate(header))
+        Y = np.empty((len(X), ), dtype=np.object)
+        for i, x in enumerate(X):
+            Y[i] = self._predict_one(x, mheader)
+        return Y
+
+    def _predict_one(self, x, mheader):
+        node = self.root
+        while not node.leaf:
+            i = mheader[node.name]
+            node = node.nodes[x[i]]
+        assert node.leaf
+        return node.leaf_cls
     def __str__(self):
         return str(self.root)
 
@@ -151,3 +163,6 @@ if __name__ == '__main__':
     dt = DecisionTree(method)
     dt.train(X, Y, header)
     print(dt)
+    PY = dt.predict(X, header)
+    acc = (PY == Y).sum() / len(Y)
+    print(f"Accuracy: {acc}")

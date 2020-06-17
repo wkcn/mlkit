@@ -11,7 +11,6 @@ def prune(tree, X, Y, header, alpha):
     q.put(tree.root)
     parents[tree.root] = None
     st = list()
-    num_leaves = defaultdict(int) # the number of leaves
     while not q.empty():
         r = q.get()
         st.append(r)
@@ -20,8 +19,6 @@ def prune(tree, X, Y, header, alpha):
                 assert node not in parents
                 parents[node] = r
                 q.put(node)
-        else:
-            num_leaves[node] = 1
     mheader = dict((name, i) for i, name in enumerate(header))
     samples = defaultdict(lambda: defaultdict(int)) # node to the label distribution of node
     losses = dict()
@@ -39,9 +36,8 @@ def prune(tree, X, Y, header, alpha):
         samples_r = samples[r]
         ps = samples[parent]
         for k, v in samples_r.items():
-            # update samples and num_leaves
+            # update samples
             ps[k] += v
-            num_leaves[parent] += num_leaves[r]
 
         t = np.array([v for v in samples_r.values()])
         n = sum(t)

@@ -11,7 +11,22 @@ def read_csv(fname):
     return data.columns, np.array(data.to_numpy())
 
 
-class ID3:
+class DecisionTreeMethod:
+    @staticmethod
+    def H(X):
+        # 熵：随机变量不确定性的度量
+        raise NotImplemented()
+    @staticmethod
+    def CondH(Y, X):
+        # 条件熵：随机变量X给定的条件下随机变量Y的条件熵，H(Y|X)
+        raise NotImplemented()
+    @staticmethod
+    def Gain(Y, X):
+        # 信息增益
+        raise NotImplemented()
+
+
+class ID3(DecisionTreeMethod):
     @staticmethod
     def H(X):
         # 熵：随机变量不确定性的度量
@@ -25,7 +40,7 @@ class ID3:
         return entropy
     @staticmethod
     def CondH(Y, X):
-        # 条件熵：随机变量X给弟弟那个的条件下随机变量Y的条件熵，H(Y|X)
+        # 条件熵：随机变量X给定的条件下随机变量Y的条件熵，H(Y|X)
         assert Y.ndim == 1
         assert X.ndim == 1
         ux = np.unique(X)
@@ -42,11 +57,27 @@ class ID3:
         # g(D, A) = H(D) - H(D|A)
         return ID3.H(Y) - ID3.CondH(Y, X)
 
+
 class C4_5(ID3):
     @staticmethod
     def Gain(Y, X):
         # 信息增益比
         return ID3.Gain(Y, X) / ID3.H(X)
+
+
+class Gini(ID3):
+    @staticmethod
+    def H(X):
+        # 熵：随机变量不确定性的度量
+        assert X.ndim == 1
+        ux = np.unique(X)
+        p2sum = 0.0
+        for x in ux:
+            p = np.count_nonzero(X == x) / len(X)
+            # 这里用以2为底的对数，loge也可以的
+            p2sum += p * p
+        return 1.0 - p2sum
+
 
 class Node:
     def __init__(self, name=None, cls=None):
@@ -79,6 +110,7 @@ class Node:
 
 class DecisionTree:
     def __init__(self, method, gain_threshold=None):
+        assert issubclass(method, DecisionTreeMethod)
         self.method = method
         self.root = None
         self.gain_threshold = gain_threshold
@@ -160,12 +192,16 @@ class DecisionTree:
 if __name__ == '__main__':
     fname = '../data/table5.1.csv'
     columns, data = read_csv(fname)
-    use_id = True
+    use_id = False
+    '''
+    只有C4.5能处理use_id = True
+    '''
     offset = 0 if use_id else 1
     X, Y = data[:, offset:-1], data[:, -1]
     header = columns[offset:-1]
     # method = ID3
-    method = C4_5
+    # method = C4_5
+    method = Gini
     dt = DecisionTree(method)
     dt.train(X, Y, header)
     print(dt)

@@ -68,22 +68,59 @@ def prune(tree, X, Y, header, alpha):
                 losses[r] = loss
     print(f"Prune Over, loss: {losses[tree.root]:.5}")
 
+def compute_loss(tree, X, Y, header, alpha):
+    mheader = dict((name, i) for i, name in enumerate(header))
+    samples = defaultdict(lambda: defaultdict(int)) # node to the label distribution of node
+    losses = dict()
+    q = Queue()
+    q.put(tree.root)
+    for x, y in zip(X, Y):
+        node = tree.root
+        while not node.leaf:
+            i = mheader[node.name]
+            node = node.nodes[x[i]]
+        assert node.leaf
+        samples[node][y] += 1
+
+    loss = 0
+    while not q.empty():
+        r = q.get()
+        if not r.leaf:
+            for node in r.nodes.values():
+                q.put(node)
+        else:
+            # leaf
+            loss += alpha
+            samples_r = samples[r]
+
+            t = np.array([v for v in samples_r.values()])
+            n = sum(t)
+            fr = t / n
+            h = -(fr * np.log2(fr)).sum()
+            loss += n * h
+    return loss
+
+
 if __name__ == '__main__':
     fname = '../data/table5.1.csv'
     columns, data = read_csv(fname)
     use_id = True
     offset = 0 if use_id else 1
+    alpha = 8
+
     X, Y = data[:, offset:-1], data[:, -1]
     header = columns[offset:-1]
     # method = ID3
     method = C4_5
     dt = DecisionTree(method)
     dt.train(X, Y, header)
-    print("Before prune")
+    loss = compute_loss(dt, X, Y, header, alpha)
+    print(f"Before prune, loss: {loss:.5}")
     print(dt)
 
-    prune(dt, X, Y, header, alpha=8)
-    print("After prune")
+    prune(dt, X, Y, header, alpha=alpha)
+    loss = compute_loss(dt, X, Y, header, alpha)
+    print(f"After prune, loss: {loss:.5}")
     print(dt)
 
     PY = dt.predict(X, header)

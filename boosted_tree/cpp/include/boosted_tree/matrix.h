@@ -1,5 +1,5 @@
-#ifndef MATRIX_H_
-#define MATRIX_H_
+#ifndef BOOSTED_TREE_MATRIX_H_
+#define BOOSTED_TREE_MATRIX_H_
 
 #include <iostream>
 #include <vector>

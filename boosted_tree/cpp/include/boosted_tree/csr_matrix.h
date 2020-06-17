@@ -1,5 +1,5 @@
-#ifndef CSR_MATRIX_H_
-#define CSR_MATRIX_H_
+#ifndef BOOSTED_TREE_CSR_MATRIX_H_
+#define BOOSTED_TREE_CSR_MATRIX_H_
 
 #include <algorithm>
 #include <cstddef>

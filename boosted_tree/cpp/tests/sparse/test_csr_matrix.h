@@ -43,3 +43,37 @@ TEST(TestCSRMatrix, getitem) {
     }
   } 
 }
+
+#include <iostream>
+using namespace std;
+TEST(TestCSRMatrix, setitem) {
+  std::vector<std::vector<int> > mat{{1, 0, 2},
+                                     {0, 0, 3},
+                                     {4, 5, 6}};
+  std::vector<dim_t> row;
+  std::vector<dim_t> col;
+  std::vector<int> data;
+  for (int r = 0; r < 3; ++r) {
+    for (int c = 0; c < 3; ++c) {
+      if (mat[r][c]) {
+        row.push_back(r);
+        col.push_back(c);
+        data.push_back(mat[r][c]);
+      }
+    }
+  }
+  CSRMatrix<int> smat(3, 3);
+  smat.reset(row, col, data);
+
+  std::vector<std::vector<int> > new_mat{{5, 3, 2},
+                                         {0, 4, 0},
+                                         {7, 0, 6}};
+  for (int r = 0; r < 3; ++r) {
+    for (int c = 0; c < 3; ++c) {
+      smat[r].set(c, new_mat[r][c]);
+    }
+  }
+  for (int r = 0; r < 3; ++r) {
+    ASSERT_EQ(smat[r], new_mat[r]);
+  }
+}

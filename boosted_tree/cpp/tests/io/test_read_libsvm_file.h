@@ -6,9 +6,6 @@
 #include <boosted_tree/csr_matrix.h>
 #include <boosted_tree/io.h>
 
-#include <iostream>
-using namespace std;
-
 TEST(TestIO, ReadLibSVMFile) {
   auto [smat, labels] = ReadLibSVMFile("./tests/io/simple_data.txt");
   ASSERT_EQ(labels, (std::vector<float>{1, 2, 4}));

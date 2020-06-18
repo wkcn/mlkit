@@ -176,17 +176,19 @@ void CSRRow<T>::set(dim_t col, const T &value) {
   const auto rindices_begin = indices.begin() + offset_begin;
   const auto rindices_end = indices.begin() + offset_end;
   auto p = lower_bound(rindices_begin, rindices_end, col); 
+  dim_t offset = p - indices.begin();
   if (p != rindices_end && *p == col) {
-    *p = value;
+    values[offset] = value;
   } else if (value != 0) {
+    bool first = p == rindices_begin;
     indices.insert(p, col);
-    dim_t offset = p - indices.begin();
     values.insert(values.begin() + offset, value);
-    if (offset == 0) {
-      for (dim_t r = row_; r < offsets.size(); ++r) {
-        ++offsets[r];
-      } 
+    if (first) {
+      offsets[row_] = offset;
     }
+    for (dim_t r = row_ + 1; r < offsets.size(); ++r) {
+      ++offsets[r];
+    } 
   }
 }
 

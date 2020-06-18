@@ -34,9 +34,9 @@ public:
              const std::vector<dim_t> &col,
              const std::vector<T> &data);
   void compress();
-  Matrix<T> todense();
-  COOMatrix<T> tocoo();
-  CSRMatrix<T> transpose();
+  Matrix<T> todense() const;
+  COOMatrix<T> tocoo() const;
+  CSRMatrix<T> transpose() const;
 public:
   CSRRow<T> operator[](dim_t row);
   dim_t length() const;
@@ -170,7 +170,7 @@ void CSRMatrix<T>::compress() {
 }
 
 template<typename T>
-Matrix<T> CSRMatrix<T>::todense() {
+Matrix<T> CSRMatrix<T>::todense() const {
   Matrix<T> mat(rows_, cols_, 0);
   auto &offsets = data_->offsets;
   auto &indices = data_->indices;
@@ -186,7 +186,7 @@ Matrix<T> CSRMatrix<T>::todense() {
 }
 
 template<typename T>
-COOMatrix<T> CSRMatrix<T>::tocoo() {
+COOMatrix<T> CSRMatrix<T>::tocoo() const {
   COOMatrix<T> smat(rows_, cols_);
   auto &offsets = data_->offsets;
   auto &indices = data_->indices;
@@ -205,7 +205,7 @@ COOMatrix<T> CSRMatrix<T>::tocoo() {
 }
 
 template<typename T>
-CSRMatrix<T> CSRMatrix<T>::transpose() {
+CSRMatrix<T> CSRMatrix<T>::transpose() const {
   COOMatrix<T> smat = tocoo();
   COOChunk<T> &chunk = smat.data();
   CSRMatrix<T> res(cols_, rows_);

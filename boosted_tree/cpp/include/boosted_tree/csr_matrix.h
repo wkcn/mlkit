@@ -29,6 +29,7 @@ public:
   void reset(const std::vector<dim_t> &row,
              const std::vector<dim_t> &col,
              const std::vector<T> &data);
+  void compress();
   Matrix<T> todense();
 public:
   CSRRow<T> operator[](dim_t row);
@@ -129,6 +130,29 @@ void CSRMatrix<T>::reset(const std::vector<dim_t> &row,
   }
   TEST_EQ(last_offset, values.size());
   offsets.back() = last_offset;
+}
+
+template<typename T>
+void CSRMatrix<T>::compress() {
+  auto &offsets = data_->offsets;
+  auto &indices = data_->indices;
+  auto &values = data_->values;
+  dim_t vi = 0;
+  for (dim_t r = 0; r < rows_; ++r) {
+    const dim_t offset_begin = offsets[r];
+    const dim_t offset_end = offsets[r + 1];
+    offsets[r] = vi;
+    for (dim_t t = offset_begin; t < offset_end; ++t) {
+      if (values[t] != 0) {
+        values[vi] = values[t];
+        indices[vi] = indices[t];
+        ++vi;
+      }
+    }
+  }
+  offsets[rows_] = vi;
+  indices.resize(vi);
+  values.resize(vi);
 }
 
 template<typename T>

@@ -76,4 +76,8 @@ TEST(TestCSRMatrix, setitem) {
   for (int r = 0; r < 3; ++r) {
     ASSERT_EQ(smat[r], new_mat[r]);
   }
+  smat.compress();
+  for (int r = 0; r < 3; ++r) {
+    ASSERT_EQ(smat[r], new_mat[r]);
+  }
 }

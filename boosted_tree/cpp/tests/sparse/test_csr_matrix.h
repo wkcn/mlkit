@@ -1,4 +1,5 @@
 #pragma once
+#include <initializer_list>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -11,7 +12,7 @@ TEST(TestCSRMatrix, todense) {
   CSRMatrix<int> smat(3, 3);
   smat.reset(row, col, data);
   Matrix<int> mat = smat.todense();
-  ASSERT_EQ(mat.data[0], (std::vector<int>{1, 0, 2}));
-  ASSERT_EQ(mat.data[1], (std::vector<int>{0, 0, 3}));
-  ASSERT_EQ(mat.data[2], (std::vector<int>{4, 5, 6}));
+  ASSERT_EQ(mat[0], (std::vector<int>{1, 0, 2}));
+  ASSERT_EQ(mat[1], (std::vector<int>{0, 0, 3}));
+  ASSERT_EQ(mat[2], (std::vector<int>{4, 5, 6}));
 }

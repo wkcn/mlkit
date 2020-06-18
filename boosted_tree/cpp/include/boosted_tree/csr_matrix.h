@@ -90,7 +90,7 @@ Matrix<T> CSRMatrix<T>::todense() {
   for (dim_t r = 0; r < rows_; ++r) {
     if (offsets_[r] != -1) {
       for (dim_t i = offsets_[r]; i < offsets_[r+1]; ++i) {
-        mat.data[r][indices_[i]] = values_[i];
+        mat[r][indices_[i]] = values_[i];
       } 
     }
   }

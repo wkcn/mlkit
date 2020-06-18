@@ -10,9 +10,10 @@
 #include "./csr_matrix.h"
 #include "./logging.h"
 #include "./type_convert.h"
+#include "./vec.h"
 
 template <typename TX, typename TY>
-std::pair<CSRMatrix<TX>, std::vector<TY> > ReadLibSVMFile(
+std::pair<CSRMatrix<TX>, Vec<TY> > ReadLibSVMFile(
     const std::string &filename) {
   std::ifstream fin(filename);
   if (!fin.is_open()) {
@@ -21,7 +22,7 @@ std::pair<CSRMatrix<TX>, std::vector<TY> > ReadLibSVMFile(
   }
   std::string buf;
 
-  std::vector<TY> labels;
+  Vec<TY> labels;
   std::vector<dim_t> row;
   std::vector<dim_t> col;
   std::vector<TX> data;

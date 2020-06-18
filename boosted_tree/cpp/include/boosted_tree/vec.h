@@ -72,7 +72,7 @@ DEF_VEC_OP_SCALAR_BINARY_FUNC(/, /=)
 #define DEF_VEC_OP_VEC_BINARY_FUNC(op, aop)              \
   template <typename T>                                  \
   Vec<T> operator op(const Vec<T> &a, const Vec<T> &b) { \
-    assert(a.size() == b.size());                       \
+    assert(a.size() == b.size());                        \
     Vec<T> c = a;                                        \
     c aop b;                                             \
     return c;                                            \

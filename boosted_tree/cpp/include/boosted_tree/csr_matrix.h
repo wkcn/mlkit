@@ -7,6 +7,7 @@
 #include <utility>
 #include <vector>
 
+#include "./coo_matrix.h"
 #include "./matrix.h"
 #include "./logging.h"
 
@@ -26,11 +27,14 @@ template<typename T>
 class CSRMatrix {
 public:
   CSRMatrix(dim_t rows, dim_t cols);
+  void reset(const COOMatrix<T> &smat);
   void reset(const std::vector<dim_t> &row,
              const std::vector<dim_t> &col,
              const std::vector<T> &data);
   void compress();
   Matrix<T> todense();
+  COOMatrix<T> tocoo();
+  CSRMatrix<T> transpose();
 public:
   CSRRow<T> operator[](dim_t row);
   dim_t length() const;
@@ -90,6 +94,12 @@ CSRRow<T> CSRMatrix<T>::operator[](dim_t row) {
 template<typename T>
 dim_t CSRMatrix<T>::length() const {
   return rows_;
+}
+
+template <typename T>
+void CSRMatrix<T>::reset(const COOMatrix<T> &smat) {
+  const COOChunk<T> &chunk = smat.data();
+  reset(chunk.row, chunk.col, chunk.data);
 }
 
 template<typename T>
@@ -169,6 +179,34 @@ Matrix<T> CSRMatrix<T>::todense() {
     }
   }
   return mat;
+}
+
+template<typename T>
+COOMatrix<T> CSRMatrix<T>::tocoo() {
+  COOMatrix<T> smat(rows_, cols_);
+  auto &offsets = data_->offsets;
+  auto &indices = data_->indices;
+  auto &values = data_->values;
+  COOChunk<T> &chunk = smat.data();
+  for (dim_t r = 0; r < rows_; ++r) {
+    if (offsets[r] != -1) {
+      for (dim_t i = offsets[r]; i < offsets[r+1]; ++i) {
+        chunk.row.push_back(r);
+        chunk.col.push_back(indices[i]);
+        chunk.data.push_back(values[i]);
+      }
+    }
+  }
+  return smat;
+}
+
+template<typename T>
+CSRMatrix<T> CSRMatrix<T>::transpose() {
+  COOMatrix<T> smat = tocoo();
+  COOChunk<T> &chunk = smat.data();
+  CSRMatrix<T> res(cols_, rows_);
+  res.reset(chunk.col, chunk.row, chunk.data);
+  return res;
 }
 
 template<typename T>

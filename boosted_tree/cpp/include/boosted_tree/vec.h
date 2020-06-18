@@ -17,7 +17,7 @@
 
 #define DEF_VEC_OP_VEC_FUNC(op)          \
   Vec<T> &operator op(const Vec<T> &b) { \
-    assert(this->size() == b.size());   \
+    assert(this->size() == b.size());    \
     const int N = this->size();          \
     for (int i = 0; i < N; ++i) {        \
       (*this)[i] op b[i];                \

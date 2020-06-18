@@ -12,6 +12,7 @@
 #include "./coo_matrix.h"
 #include "./matrix.h"
 #include "./logging.h"
+#include "./vec.h"
 
 typedef int64_t dim_t;
 
@@ -49,17 +50,20 @@ private:
 template<typename T>
 class CSRRow {
 public:
-  CSRRow(std::shared_ptr<CSRChunk<T> > data, dim_t row);
+  CSRRow(std::shared_ptr<CSRChunk<T> > data, dim_t row, dim_t cols);
   T operator[](dim_t col) const;
   template <typename Iterator>
   std::vector<T> at(Iterator first, Iterator last) const;
   void set(dim_t col, const T &value);
+  Vec<T> todense() const;
+  dim_t length() const;
 public:
   template <typename U, typename VT>
   friend bool operator==(const CSRRow<U> &a, const VT &b);
 private:
   std::shared_ptr<CSRChunk<T> > data_;
   dim_t row_;
+  dim_t cols_;
 }; 
 
 template<typename T, typename VT>
@@ -92,7 +96,7 @@ CSRMatrix<T>::CSRMatrix(dim_t rows, dim_t cols) {
 
 template<typename T>
 CSRRow<T> CSRMatrix<T>::operator[](dim_t row) {
-  return CSRRow<T>(data_, row);
+  return CSRRow<T>(data_, row, cols_);
 }
 
 template<typename T>
@@ -215,8 +219,8 @@ CSRMatrix<T> CSRMatrix<T>::transpose() const {
 
 template<typename T>
 CSRRow<T>::CSRRow(
-    std::shared_ptr<CSRChunk<T> > data, dim_t row) :
-    data_(data), row_(row) {
+    std::shared_ptr<CSRChunk<T> > data, dim_t row, dim_t cols) :
+    data_(data), row_(row), cols_(cols) {
 }
 
 template<typename T>
@@ -285,6 +289,30 @@ void CSRRow<T>::set(dim_t col, const T &value) {
       ++offsets[r];
     } 
   }
+}
+
+template<typename T>
+Vec<T> CSRRow<T>::todense() const {
+  auto &offsets = data_->offsets;
+  auto &indices = data_->indices;
+  auto &values = data_->values;
+  dim_t offset = offsets[row_];
+  const dim_t offset_end = offsets[row_ + 1];
+  Vec<T> vec(cols_);
+  for (dim_t i = 0; i < cols_; ++i) {
+    if (offset >= offset_end || indices[offset] != i) {
+      vec[i] = 0;
+    } else {
+      vec[i] = values[offset];
+      ++offset;
+    }
+  }
+  return vec;
+}
+
+template<typename T>
+dim_t CSRRow<T>::length() const {
+  return cols_;
 }
 
 #endif

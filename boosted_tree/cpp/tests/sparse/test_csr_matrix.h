@@ -41,7 +41,24 @@ TEST(TestCSRMatrix, getitem) {
     for (int c = 0; c < 3; ++c) {
       ASSERT_EQ(smat[r][c], mat[r][c]);
     }
-  } 
+  }
+
+  std::vector<std::vector<int> > orders = {{0, 1, 2},
+                                           {0, 2, 1},
+                                           {1, 0, 2},
+                                           {1, 2, 0},
+                                           {2, 0, 1},
+                                           {2, 1, 0}};
+  for (int r = 0; r < 3; ++r) {
+    for (auto &order : orders) {
+      std::vector<int> left = smat[r].at(order.begin(), order.end());
+      std::vector<int> right(3);
+      for (int j = 0; j < 3; ++j) {
+        right[j] = mat[r][order[j]];
+      }
+      ASSERT_EQ(left, right);
+    }
+  }
 }
 
 TEST(TestCSRMatrix, transpose) {

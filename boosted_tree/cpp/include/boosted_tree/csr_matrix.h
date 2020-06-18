@@ -4,6 +4,8 @@
 #include <algorithm>
 #include <cstddef>
 #include <memory>
+#include <numeric>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -49,6 +51,8 @@ class CSRRow {
 public:
   CSRRow(std::shared_ptr<CSRChunk<T> > data, dim_t row);
   T operator[](dim_t col) const;
+  template <typename Iterator>
+  std::vector<T> at(Iterator first, Iterator last) const;
   void set(dim_t col, const T &value);
 public:
   template <typename U, typename VT>
@@ -226,6 +230,35 @@ T CSRRow<T>::operator[](dim_t col) const {
   const auto rindices_end = indices.begin() + offset_end;
   auto p = lower_bound(rindices_begin, rindices_end, col); 
   return (p != rindices_end && *p == col) ? values[p - indices.begin()] : 0;
+}
+
+template <typename T>
+template <typename Iterator>
+std::vector<T> CSRRow<T>::at(Iterator first, Iterator last) const {
+  std::vector<dim_t> cols(first, last);
+  auto &offsets = data_->offsets;
+  auto &indices = data_->indices;
+  auto &values = data_->values;
+  const dim_t offset_begin = offsets[row_];
+  const dim_t offset_end = offsets[row_ + 1];
+
+
+  const int n = cols.size();
+  std::vector<dim_t> inds(n);
+  iota(inds.begin(), inds.end(), 0);
+  std::sort(inds.begin(), inds.end(), [&cols](const int a, const int b) {
+      return cols[a] < cols[b];
+  });
+  std::vector<T> out(n);
+  auto p = indices.begin() + offset_begin;
+  const auto rindices_end = indices.begin() + offset_end;
+  for (dim_t i = 0; i < n; ++i) {
+    dim_t t = inds[i];
+    dim_t col = cols[t];
+    p = lower_bound(p, rindices_end, col);
+    out[t] = (p != rindices_end && *p == col) ? values[p - indices.begin()] : 0;
+  }
+  return out;
 }
 
 template <typename T>

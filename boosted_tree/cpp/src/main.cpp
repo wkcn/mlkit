@@ -31,7 +31,7 @@ int main(int argc, char **argv) {
 
     if (argc > 2) {
       std::string test_fname = argv[2];
-      LOG(INFO) << "Open training data: " << test_fname;
+      LOG(INFO) << "Open testing data: " << test_fname;
       auto p = ReadLibSVMFile<float, float>(test_fname);
       float acc = ComputeAccuracy(bst.predict(p.first), p.second);
       LOG(INFO) << "Testing Accuracy: " << acc;

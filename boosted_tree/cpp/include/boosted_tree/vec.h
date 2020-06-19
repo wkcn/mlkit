@@ -33,9 +33,6 @@ class Vec : public std::vector<T> {
   Vec(std::initializer_list<T> il) : std::vector<T>(il) {}
   template <class InputIterator>
   Vec(InputIterator first, InputIterator last) : std::vector<T>(first, last) {}
-  Vec(const Vec &x) : std::vector<T>(x) {}
-  Vec(const Vec &&x) : std::vector<T>(x) {}
-
  public:
   // scalar
   DEF_VEC_OP_SCALAR_FUNC(+=)

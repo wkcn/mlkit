@@ -39,7 +39,7 @@ public:
   COOMatrix<T> tocoo() const;
   CSRMatrix<T> transpose() const;
 public:
-  CSRRow<T> operator[](dim_t row);
+  CSRRow<T> operator[](dim_t row) const;
   dim_t length() const;
 private:
   std::shared_ptr<CSRChunk<T> > data_;
@@ -95,7 +95,7 @@ CSRMatrix<T>::CSRMatrix(dim_t rows, dim_t cols) {
 }
 
 template<typename T>
-CSRRow<T> CSRMatrix<T>::operator[](dim_t row) {
+CSRRow<T> CSRMatrix<T>::operator[](dim_t row) const {
   return CSRRow<T>(data_, row, cols_);
 }
 

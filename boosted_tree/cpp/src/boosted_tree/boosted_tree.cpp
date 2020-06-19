@@ -1,4 +1,8 @@
+#include <iostream>
+
 #include <boosted_tree/boosted_tree.h>
+#include <boosted_tree/logging.h>
+
 #include "./boosted_tree_impl.h"
 
 BoostedTree::BoostedTree() : pImpl(new Impl) {
@@ -6,20 +10,24 @@ BoostedTree::BoostedTree() : pImpl(new Impl) {
 
 BoostedTree::~BoostedTree() = default;
 
-void BoostedTree::train(const CSRMatrix<float> &X, const std::vector<float> &Y) {
+void BoostedTree::train(const CSRMatrix<float> &X, const Vec<float> &Y) {
   pImpl->train(X, Y);
 }
 
-std::vector<float> BoostedTree::predict(const CSRMatrix<float> &X) {
+Vec<float> BoostedTree::predict(const CSRMatrix<float> &X) {
   return pImpl->predict(X);
 }
 
 
-void BoostedTree::Impl::train(const CSRMatrix<float> &X, const std::vector<float> &Y) {
+void BoostedTree::Impl::train(const CSRMatrix<float> &X, const Vec<float> &Y) {
+  const int N = X.length();
+  const int M = X[0].length();
+  CHECK_EQ(N, Y.size());
+  LOG(INFO) << "Input Data: (" << N << " X " << M << ")";
   CSRMatrix<float> XT = X.transpose();
-  LOG(INFO) << "TRAIN";
+  LOG(INFO) << "Start training...";
 }
 
-std::vector<float> BoostedTree::Impl::predict(const CSRMatrix<float> &X) {
+Vec<float> BoostedTree::Impl::predict(const CSRMatrix<float> &X) {
   return {};
 }

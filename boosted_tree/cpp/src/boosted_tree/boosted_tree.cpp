@@ -168,7 +168,6 @@ int BoostedTree::Impl::CreateNode(Vec<float> &residual, const std::vector<int> &
 
   // leaf
   node.is_leaf = true;
-  param_.learning_rate = 1;
   float pred_factor = pred * param_.learning_rate;
   node.value = pred_factor;
   // update residual

@@ -7,6 +7,13 @@
 
 #include "./vec.h"
 
+template <typename T>
+inline T clip(T value, T min_value, T max_value) {
+  if (value <= min_value) return min_value;
+  if (value >= max_value) return max_value;
+  return value;
+}
+
 struct SquareLoss {
   template <typename T>
   inline static T compute(T x, T y) {
@@ -48,8 +55,9 @@ struct LogisticLoss {
   }
   template <typename T>
   inline static T predict(const Vec<T> &Y) {
-    T su = std::accumulate(Y.begin(), Y.end(), T(0));
-    return log(su) - log(T(Y.size()) - su);
+    const T eps = 1e-6;
+    T mean = clip(std::accumulate(Y.begin(), Y.end(), T(0)) / Y.size(), eps, T(1) - eps);
+    return log(mean / (T(1) - mean));
   }
 };
 

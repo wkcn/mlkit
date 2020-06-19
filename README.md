@@ -6,7 +6,7 @@ In this repository, I implement some machine learning algorithm from scratch.
 - [AdaBoost](./adaboost)
 - [Boosted Tree](./boosted_tree)
 - [Decision Tree](./decision_tree)
-- [KMeans](./kmeans)
+- [K-Means](./kmeans)
 - [Naive Bayes](./naive_bayes)
 - [Perceptron](./perceptron)
 

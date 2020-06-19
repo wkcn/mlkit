@@ -102,6 +102,7 @@ int BoostedTree::Impl::CreateNode(Vec<float> &residual, const std::vector<int> &
 
   const size_t num_samples = sample_ids.size();
   Vec<float> part_residual(num_samples);
+  #pragma omp for
   for (int i = 0; i < num_samples; ++i) {
     part_residual[i] = residual[sample_ids[i]];
   }
@@ -118,9 +119,11 @@ int BoostedTree::Impl::CreateNode(Vec<float> &residual, const std::vector<int> &
   if (!gen_leaf && !feature_ids.empty()) {
     // compute gradient and hessian
     Vec<float> gradients(num_samples), hessians(num_samples);
+    #pragma omp for
     for (int i = 0; i < num_samples; ++i) {
       gradients[i] = loss.gradient(pred, part_residual[i]);
     }
+    #pragma omp for
     for (int i = 0; i < num_samples; ++i) {
       hessians[i] = loss.hessian(pred, part_residual[i]);
     }

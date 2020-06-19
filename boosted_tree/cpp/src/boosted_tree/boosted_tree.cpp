@@ -22,7 +22,6 @@ Vec<float> BoostedTree::predict(const CSRMatrix<float> &X) {
 }
 
 BoostedTree::Impl::Impl(const BoostedTreeParam &param) : param_(param) {
-  lambda = 1;
 }
 
 void BoostedTree::Impl::train(const CSRMatrix<float> &X, const Vec<float> &Y) {
@@ -38,16 +37,14 @@ void BoostedTree::Impl::train(const CSRMatrix<float> &X, const Vec<float> &Y) {
   std::vector<int> feature_ids(M);
   std::iota(feature_ids.begin(), feature_ids.end(), 0);
   Vec<float> residual(Y_);
-  int iter = 0;
-  while (1) {
+  for (int iter = 1; iter <= param_.n_estimators; ++iter) {
     int root = CreateNode(residual, sample_ids, feature_ids, 1);
     trees.push_back(root);
     // returned residual is the predicted value
     // TODO: Check accuracy
     float loss = Sum(residual * residual);
     LOG(INFO) << "Iteration: " << iter << " Loss: " << loss;
-    if (loss <= 0) break;
-    ++iter;
+    if (loss <= 1e-3) break;
   }
   LOG(INFO) << "Train over";
 }
@@ -163,11 +160,13 @@ int BoostedTree::Impl::CreateNode(Vec<float> &residual, const std::vector<int> &
 
   // leaf
   node.is_leaf = true;
-  node.value = pred;
+  param_.learning_rate = 1;
+  float pred_factor = pred * param_.learning_rate;
+  node.value = pred_factor;
   // update residual
   for (int i = 0; i < num_samples; ++i) {
     float &r = residual[sample_ids[i]];
-    r -= pred;
+    r -= pred_factor;
   }
   return nid; 
 }
@@ -216,7 +215,7 @@ SplitInfo BoostedTree::Impl::GetSplitInfo(const std::vector<int> &sample_ids, in
     }
     float G_R = G_sum - G_L;
     float H_R = H_sum - H_L;
-    float gain = G_L * G_L / (H_L + lambda) + G_R * G_R / (H_R + lambda);
+    float gain = G_L * G_L / (H_L + param_.reg_lambda) + G_R * G_R / (H_R + param_.reg_lambda);
     if (gain > best_gain) {
       best_gain = gain;
       best_split = split;

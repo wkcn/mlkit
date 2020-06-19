@@ -10,7 +10,7 @@
 struct BoostedTreeParam {
   int max_depth = 6;
   float learning_rate = 0.3;  // eta
-  int n_estimators = -1;
+  int n_estimators = 100;
   std::string objective = "reg:linear";
   float reg_lambda = 1;
 };

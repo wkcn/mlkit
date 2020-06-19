@@ -56,5 +56,4 @@ private:
   std::mutex nodes_alloc_mtx_;
   CSRMatrix<float> XT_;
   Vec<float> Y_;
-  float lambda;
 };

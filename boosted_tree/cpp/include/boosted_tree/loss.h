@@ -28,7 +28,7 @@ struct SquareLoss {
   }
   template <typename T>
   inline static T predict(const Vec<T> &Y) {
-    return std::accumulate(Y.begin(), Y.end(), 0) / Y.size();
+    return std::accumulate(Y.begin(), Y.end(), T(0)) / Y.size();
   }
 };
 
@@ -48,7 +48,7 @@ struct LogisticLoss {
   }
   template <typename T>
   inline static T predict(const Vec<T> &Y) {
-    T mean = std::accumulate(Y.begin(), Y.end(), 0) / Y.size();
+    T mean = std::accumulate(Y.begin(), Y.end(), T(0)) / Y.size();
     return log(mean / (1 - mean));
   }
 };

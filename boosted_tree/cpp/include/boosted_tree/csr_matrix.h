@@ -59,7 +59,7 @@ public:
   CSRRow(std::shared_ptr<CSRChunk<T> > data, dim_t row, dim_t cols);
   T operator[](dim_t col) const;
   template <typename Iterator>
-  std::vector<T> at(Iterator first, Iterator last) const;
+  Vec<T> at(Iterator first, Iterator last) const;
   void set(dim_t col, const T &value);
   Vec<T> todense() const;
   dim_t length() const;
@@ -244,7 +244,7 @@ T CSRRow<T>::operator[](dim_t col) const {
 
 template <typename T>
 template <typename Iterator>
-std::vector<T> CSRRow<T>::at(Iterator first, Iterator last) const {
+Vec<T> CSRRow<T>::at(Iterator first, Iterator last) const {
   std::vector<dim_t> cols(first, last);
   auto &offsets = data_->offsets;
   auto &indices = data_->indices;
@@ -259,7 +259,7 @@ std::vector<T> CSRRow<T>::at(Iterator first, Iterator last) const {
   std::sort(inds.begin(), inds.end(), [&cols](const int a, const int b) {
       return cols[a] < cols[b];
   });
-  std::vector<T> out(n);
+  Vec<T> out(n);
   auto p = indices.begin() + offset_begin;
   const auto rindices_end = indices.begin() + offset_end;
   for (dim_t i = 0; i < n; ++i) {

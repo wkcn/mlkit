@@ -16,9 +16,9 @@ int main(int argc, char **argv) {
     auto p = ReadLibSVMFile<float, float>(filename);
     X = std::move(p.first);
     Y = std::move(p.second);
+    bst.train(X, Y);
   } else {
     LOG(INFO) << "Please pass the argument `filename`";
   }
-  bst.train(X, Y);
   return 0;
 }

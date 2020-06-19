@@ -29,13 +29,17 @@ struct Node {
   bool is_leaf;
 };
 
+struct SplitInfo {
+};
+
 class BoostedTree::Impl {
 public:
   void train(const CSRMatrix<float> &X, const Vec<float> &Y);
   Vec<float> predict(const CSRMatrix<float> &X);
 private:
   int GetNewNodeID();
-  int CreateNode(const Vec<float> &residual, const std::vector<int> &sample_ids, const std::vector<int> &feature_ids);
+  int CreateNode(Vec<float> &residual, const std::vector<int> &sample_ids, const std::vector<int> &feature_ids);
+  SplitInfo GetSplitInfo(const std::vector<int> &sample_ids, int feature_id, const Vec<float> &gradients, const Vec<float> &hessians);
 private:
   std::vector<int> trees;
   LogisticLoss loss;

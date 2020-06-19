@@ -40,14 +40,16 @@ public:
   Impl();
   void train(const CSRMatrix<float> &X, const Vec<float> &Y);
   Vec<float> predict(const CSRMatrix<float> &X);
+  float predict_one(const CSRRow<float> &X);
 private:
+  float predict_one_in_a_tree(const CSRRow<float> &X, int root);
   int GetNewNodeID();
   int CreateNode(Vec<float> &residual, const std::vector<int> &sample_ids, const std::vector<int> &feature_ids);
   SplitInfo GetSplitInfo(const std::vector<int> &sample_ids, int feature_id, const Vec<float> &gradients, const float G_sum, const Vec<float> &hessians, const float H_sum);
 private:
   std::vector<int> trees;
   SquareLoss loss;
-  std::vector<Node> nodes_;
+  std::vector<Node*> nodes_;
   std::queue<int> free_nodes_queue_;
   std::mutex nodes_alloc_mtx_;
   CSRMatrix<float> XT_;

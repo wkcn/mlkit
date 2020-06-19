@@ -49,10 +49,35 @@ void BoostedTree::Impl::train(const CSRMatrix<float> &X, const Vec<float> &Y) {
     if (loss <= 0) break;
     ++iter;
   }
+  LOG(INFO) << "Train over";
 }
 
 Vec<float> BoostedTree::Impl::predict(const CSRMatrix<float> &X) {
-  return {};
+  const int N = X.length();
+  Vec<float> preds(N);
+  for (int i = 0; i < N; ++i) {
+    CSRRow x = X[i];
+    preds[i] = predict_one(x); 
+  }
+  return preds;
+}
+
+float BoostedTree::Impl::predict_one(const CSRRow<float> &X) {
+  float out = 0;
+  for (int root : trees) {
+    out += predict_one_in_a_tree(X, root);
+  }
+  return out;
+}
+
+float BoostedTree::Impl::predict_one_in_a_tree(const CSRRow<float> &X, int root) {
+  while (1) {
+    const Node &node = *nodes_[root];
+    if (node.is_leaf) return node.value;
+    bool is_left = X[node.feature_id] < node.value;
+    root = is_left ? node.left : node.right; 
+  }
+  return 0;
 }
 
 int BoostedTree::Impl::GetNewNodeID() {
@@ -61,17 +86,19 @@ int BoostedTree::Impl::GetNewNodeID() {
   if (free_nodes_queue_.empty()) {
     id = nodes_.size();
     nodes_.resize(id + 1);
+    nodes_[id] = new Node();
   } else {
     id = free_nodes_queue_.front();
     free_nodes_queue_.pop();
   }
+  TEST_LT(id, nodes_.size());
   return id;
 }
 
 int BoostedTree::Impl::CreateNode(Vec<float> &residual, const std::vector<int> &sample_ids, const std::vector<int> &feature_ids) {
 
-  int nid = GetNewNodeID();
-  Node &node = nodes_[nid];
+  const int nid = GetNewNodeID();
+  Node &node = *nodes_[nid];
 
   const size_t num_samples = sample_ids.size();
   Vec<float> part_residual(num_samples);
@@ -113,7 +140,6 @@ int BoostedTree::Impl::CreateNode(Vec<float> &residual, const std::vector<int> &
 
     if (best_gain != FLT_MIN) {
       // split
-      Node node;
       node.is_leaf = false;
       node.feature_id = best_info.feature_id;
 
@@ -164,6 +190,7 @@ SplitInfo BoostedTree::Impl::GetSplitInfo(const std::vector<int> &sample_ids, in
     info.feature_id = -1;
     return info;
   }
+  TEST_GT(num_splits, 0);
   Vec<float> splits(num_splits);
   float last = feat[inds[0]];
   for (int i = 1, j = 0; i < inds.size(); ++i) {
@@ -180,9 +207,10 @@ SplitInfo BoostedTree::Impl::GetSplitInfo(const std::vector<int> &sample_ids, in
   float best_split;
   for (float split : splits) {
     while (si < num_samples && feat[inds[si]] < split) {
-      int ind = inds[si++];
+      int ind = inds[si];
       G_L += gradients[ind]; 
       H_L += hessians[ind]; 
+      ++si;
     }
     float G_R = G_sum - G_L;
     float H_R = H_sum - H_L;

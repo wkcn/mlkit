@@ -9,9 +9,24 @@
 #include <boosted_tree/csr_matrix.h>
 #include <boosted_tree/loss.h>
 #include <boosted_tree/vec.h>
+#include <boosted_tree/array.h>
 
 struct Node {
+  /*
+   * Inner Node
+   *   is_leaf = false
+   *   feature_id: feature_id
+   *   left: [, value)
+   *   right: [value, )
+   *
+   * Leaf
+   *   is_leaf = true
+   *   predict: value
+   */
   int left, right;
+  int feature_id;
+  float value;
+  bool is_leaf;
 };
 
 class BoostedTree::Impl {
@@ -20,9 +35,9 @@ public:
   Vec<float> predict(const CSRMatrix<float> &X);
 private:
   int GetNewNodeID();
-  int CreateNode(const std::vector<int> &sample_ids, const std::vector<int> &feature_ids);
+  int CreateNode(const Vec<float> &residual, const std::vector<int> &sample_ids, const std::vector<int> &feature_ids);
 private:
-  int root;
+  std::vector<int> trees;
   LogisticLoss loss;
   std::vector<Node> nodes_;
   std::queue<int> free_nodes_queue_;

@@ -1,7 +1,11 @@
 #ifndef BOOSTED_TREE_LOSS_H_
 #define BOOSTED_TREE_LOSS_H_
 
+#include <algorithm>
 #include <cmath>
+#include <numeric>
+
+#include "./vec.h"
 
 struct SquareLoss {
   template <typename T>
@@ -22,6 +26,10 @@ struct SquareLoss {
     // out'' = 2
     return 2;
   }
+  template <typename T>
+  inline static T predict(const Vec<T> &Y) {
+    return std::accumulate(Y.begin(), Y.end(), 0) / Y.size();
+  }
 };
 
 struct LogisticLoss {
@@ -37,6 +45,11 @@ struct LogisticLoss {
   template <typename T>
   inline static T hessian(T x, T y) {
     return 1 / (exp(-x) + exp(x) + 2);
+  }
+  template <typename T>
+  inline static T predict(const Vec<T> &Y) {
+    T mean = std::accumulate(Y.begin(), Y.end(), 0) / Y.size();
+    return log(mean / (1 - mean));
   }
 };
 

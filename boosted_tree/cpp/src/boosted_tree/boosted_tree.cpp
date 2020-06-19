@@ -30,7 +30,13 @@ void BoostedTree::Impl::train(const CSRMatrix<float> &X, const Vec<float> &Y) {
   std::iota(sample_ids.begin(), sample_ids.end(), 0);
   std::vector<int> feature_ids(M);
   std::iota(feature_ids.begin(), feature_ids.end(), 0);
-  root = CreateNode(feature_ids, feature_ids);
+  Vec<float> residual(Y_);
+  while (1) {
+    int root = CreateNode(residual, feature_ids, feature_ids);
+    trees.push_back(root);
+    // returned residual is the predicted value
+    break;
+  }
 }
 
 Vec<float> BoostedTree::Impl::predict(const CSRMatrix<float> &X) {
@@ -50,8 +56,9 @@ int BoostedTree::Impl::GetNewNodeID() {
   return id;
 }
 
-int BoostedTree::Impl::CreateNode(const std::vector<int> &sample_ids, const std::vector<int> &feature_ids) {
+int BoostedTree::Impl::CreateNode(const Vec<float> &residual, const std::vector<int> &sample_ids, const std::vector<int> &feature_ids) {
   // compute gradient and hessian
+  std::vector<Array<float, 2> > gradients(residual.size());
   for (int feature_id : feature_ids) {
   }
   return 0;

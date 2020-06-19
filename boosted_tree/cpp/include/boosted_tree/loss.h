@@ -14,7 +14,7 @@ struct SquareLoss {
   inline static T gradient(T x, T y) {
     // first order gradient
     // out' = 2 * (x - y)
-    return 2 * (x - y)
+    return 2 * (x - y);
   }
   template <typename T>
   inline static T hessian(T x, T y) {

@@ -44,13 +44,6 @@ class Vec : public std::vector<T> {
   DEF_VEC_OP_VEC_FUNC(-=)
   DEF_VEC_OP_VEC_FUNC(*=)
   DEF_VEC_OP_VEC_FUNC(/=)
- public:
-  void Fill(T val) {
-    const int N = this->size();
-    for (int i = 0; i < N; ++i) {
-      (*this)[i] = val;
-    }
-  }
 };
 
 #define DEF_VEC_OP_SCALAR_BINARY_FUNC(op, aop)      \

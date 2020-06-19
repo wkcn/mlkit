@@ -1,11 +1,13 @@
 #pragma once
 
+#include <array>
 #include <numeric>
 #include <mutex>
 #include <queue>
 #include <vector>
 
 #include <boosted_tree/csr_matrix.h>
+#include <boosted_tree/loss.h>
 #include <boosted_tree/vec.h>
 
 struct Node {
@@ -21,6 +23,7 @@ private:
   int CreateNode(const std::vector<int> &sample_ids, const std::vector<int> &feature_ids);
 private:
   int root;
+  LogisticLoss loss;
   std::vector<Node> nodes_;
   std::queue<int> free_nodes_queue_;
   std::mutex nodes_alloc_mtx_;

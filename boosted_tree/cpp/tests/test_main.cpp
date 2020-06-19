@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "./io/io.h"
+#include "./dense/dense.h"
 #include "./sparse/sparse.h"
 
 int main(int argc, char **argv) {

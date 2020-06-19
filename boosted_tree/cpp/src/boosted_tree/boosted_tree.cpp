@@ -51,5 +51,8 @@ int BoostedTree::Impl::GetNewNodeID() {
 }
 
 int BoostedTree::Impl::CreateNode(const std::vector<int> &sample_ids, const std::vector<int> &feature_ids) {
+  // compute gradient and hessian
+  for (int feature_id : feature_ids) {
+  }
   return 0;
 }

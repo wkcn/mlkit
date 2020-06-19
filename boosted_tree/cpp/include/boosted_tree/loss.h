@@ -35,21 +35,21 @@ struct SquareLoss {
 struct LogisticLoss {
   template <typename T>
   inline static T compute(T x, T y) {
-    return y * log(1 + exp(-x)) + \
-      (1 - y) * log(1 + exp(x));
+    return y * log(T(1) + exp(-x)) + \
+      (T(1) - y) * log(T(1) + exp(x));
   }
   template <typename T>
   inline static T gradient(T x, T y) {
-    return 1 / (1 + exp(-x)) - y;
+    return T(1) / (T(1) + exp(-x)) - y;
   }
   template <typename T>
   inline static T hessian(T x, T y) {
-    return 1 / (exp(-x) + exp(x) + 2);
+    return T(1) / (exp(-x) + exp(x) + T(2));
   }
   template <typename T>
   inline static T predict(const Vec<T> &Y) {
-    T mean = std::accumulate(Y.begin(), Y.end(), T(0)) / Y.size();
-    return log(mean / (1 - mean));
+    T su = std::accumulate(Y.begin(), Y.end(), T(0));
+    return log(su) - log(T(Y.size()) - su);
   }
 };
 

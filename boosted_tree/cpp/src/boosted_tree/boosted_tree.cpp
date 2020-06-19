@@ -3,6 +3,8 @@
 #include <vector>
 #include <numeric>
 
+#include <omp.h>
+
 #include <boosted_tree/boosted_tree.h>
 #include <boosted_tree/logging.h>
 
@@ -52,6 +54,7 @@ void BoostedTree::Impl::train(const CSRMatrix<float> &X, const Vec<float> &Y) {
 Vec<float> BoostedTree::Impl::predict(const CSRMatrix<float> &X) {
   const int N = X.length();
   Vec<float> preds(N);
+  #pragma omp for
   for (int i = 0; i < N; ++i) {
     CSRRow x = X[i];
     preds[i] = predict_one(x); 
@@ -127,13 +130,18 @@ int BoostedTree::Impl::CreateNode(Vec<float> &residual, const std::vector<int> &
     float best_gain = FLT_MIN;
     SplitInfo best_info;
     std::vector<int> new_feature_ids;
-    for (int feature_id : feature_ids) {
+    const int num_features = feature_ids.size();
+    #pragma omp for
+    for (int i = 0; i < num_features; ++i) {
+      int feature_id = feature_ids[i];
       SplitInfo info = GetSplitInfo(sample_ids, feature_id, gradients, G_sum, hessians, H_sum);
-      if (info.feature_id == -1) continue;
-      new_feature_ids.push_back(info.feature_id);
-      if (info.gain > best_gain) {
-        best_gain = info.gain;
-        best_info = info;
+      #pragma omp critical
+      if (info.feature_id != -1) {
+        new_feature_ids.push_back(info.feature_id);
+        if (info.gain > best_gain) {
+          best_gain = info.gain;
+          best_info = info;
+        }
       }
     }
 
@@ -164,6 +172,7 @@ int BoostedTree::Impl::CreateNode(Vec<float> &residual, const std::vector<int> &
   float pred_factor = pred * param_.learning_rate;
   node.value = pred_factor;
   // update residual
+  #pragma omp for
   for (int i = 0; i < num_samples; ++i) {
     float &r = residual[sample_ids[i]];
     r -= pred_factor;

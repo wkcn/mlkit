@@ -40,11 +40,12 @@ void BoostedTree::Impl::train(const CSRMatrix<float> &X, const Vec<float> &Y) {
   Vec<float> residual(Y_);
   int iter = 0;
   while (1) {
-    LOG(INFO) << "Iteration: " << iter;
-    int root = CreateNode(residual, feature_ids, feature_ids);
+    int root = CreateNode(residual, sample_ids, feature_ids);
     trees.push_back(root);
     // returned residual is the predicted value
     // TODO: Check accuracy
+    float loss = Sum(residual * residual);
+    LOG(INFO) << "Iteration: " << iter << " Loss: " << loss;
     ++iter;
   }
 }
@@ -67,27 +68,78 @@ int BoostedTree::Impl::GetNewNodeID() {
 }
 
 int BoostedTree::Impl::CreateNode(Vec<float> &residual, const std::vector<int> &sample_ids, const std::vector<int> &feature_ids) {
+
+  int nid = GetNewNodeID();
+  Node &node = nodes_[nid];
+
   const size_t num_samples = sample_ids.size();
   Vec<float> part_residual(num_samples);
   for (int i = 0; i < num_samples; ++i) {
     part_residual[i] = residual[sample_ids[i]];
   }
+
   float pred = loss.predict(part_residual);
-  Vec<float> gradients(num_samples), hessians(num_samples);
+
+  bool same_label = true;
+  if (sample_ids.size() > 1) {
+    // TODO: 如何在回归问题中中止
+    same_label = false;
+  }
+  if (!same_label && !feature_ids.empty()) {
+    // compute gradient and hessian
+    Vec<float> gradients(num_samples), hessians(num_samples);
+    for (int i = 0; i < num_samples; ++i) {
+      gradients[i] = loss.gradient(pred, part_residual[i]);
+    }
+    for (int i = 0; i < num_samples; ++i) {
+      hessians[i] = loss.hessian(pred, part_residual[i]);
+    }
+    const float G_sum = Sum(gradients);
+    const float H_sum = Sum(hessians);
+
+    float best_gain = FLT_MIN;
+    SplitInfo best_info;
+    std::vector<int> new_feature_ids;
+    for (int feature_id : feature_ids) {
+      SplitInfo info = GetSplitInfo(sample_ids, feature_id, gradients, G_sum, hessians, H_sum);
+      if (info.feature_id == -1) continue;
+      new_feature_ids.push_back(info.feature_id);
+      if (info.gain > best_gain) {
+        best_gain = info.gain;
+        best_info = info;
+      }
+    }
+
+    if (best_gain != FLT_MIN) {
+      // split
+      Node node;
+      node.is_leaf = false;
+      std::vector<int> left_sample_ids, right_sample_ids;
+      float split = best_info.split;
+      CSRRow sfeat = XT_[best_info.feature_id];
+      Vec<float> feat = sfeat.at(sample_ids.begin(), sample_ids.end());
+      for (int i = 0; i < num_samples; ++i) {
+        if (feat[i] < split) left_sample_ids.push_back(sample_ids[i]);
+        else right_sample_ids.push_back(sample_ids[i]);
+      }
+      node.left = CreateNode(residual, left_sample_ids, new_feature_ids);
+      node.right = CreateNode(residual, right_sample_ids, new_feature_ids);
+      return nid;
+    }
+  }
+
+  // leaf
+  node.is_leaf = true;
+  node.value = pred;
+  // update residual
   for (int i = 0; i < num_samples; ++i) {
-    gradients[i] = loss.gradient(pred, part_residual[i]);
+    float &r = residual[sample_ids[i]];
+    r -= pred;
   }
-  for (int i = 0; i < num_samples; ++i) {
-    hessians[i] = loss.hessian(pred, part_residual[i]);
-  }
-  // compute gradient and hessian
-  for (int feature_id : feature_ids) {
-    SplitInfo split_info = GetSplitInfo(sample_ids, feature_id, gradients, hessians);
-  }
-  return 0;
+  return nid; 
 }
 
-SplitInfo BoostedTree::Impl::GetSplitInfo(const std::vector<int> &sample_ids, int feature_id, const Vec<float> &gradients, const Vec<float> &hessians) {
+SplitInfo BoostedTree::Impl::GetSplitInfo(const std::vector<int> &sample_ids, int feature_id, const Vec<float> &gradients, const float G_sum, const Vec<float> &hessians, const float H_sum) {
   CSRRow sfeat = XT_[feature_id];
   const size_t num_samples = sample_ids.size();
   Vec<float> feat = sfeat.at(sample_ids.begin(), sample_ids.end());
@@ -102,6 +154,11 @@ SplitInfo BoostedTree::Impl::GetSplitInfo(const std::vector<int> &sample_ids, in
       ++num_splits;
     }
   }
+  if (num_splits == 0) {
+    SplitInfo info;
+    info.feature_id = -1;
+    return info;
+  }
   Vec<float> splits(num_splits);
   float last = feat[inds[0]];
   for (int i = 1, j = 0; i < inds.size(); ++i) {
@@ -112,8 +169,6 @@ SplitInfo BoostedTree::Impl::GetSplitInfo(const std::vector<int> &sample_ids, in
       last = v;
     }
   }
-  const float G_sum = Sum(gradients);
-  const float H_sum = Sum(hessians);
   float G_L = 0, H_L = 0;
   int si = 0;
   float best_gain = FLT_MIN;
@@ -123,17 +178,18 @@ SplitInfo BoostedTree::Impl::GetSplitInfo(const std::vector<int> &sample_ids, in
       int ind = inds[si++];
       G_L += gradients[ind]; 
       H_L += hessians[ind]; 
-      float G_R = G_sum - G_L;
-      float H_R = H_sum - H_L;
-      float gain = G_L * G_L / (H_L + lambda) + G_R * G_R / (H_R + lambda);
-      if (gain > best_gain) {
-        best_gain = gain;
-        best_split = split;
-      }
     }
-    SplitInfo info;
-    info.split = best_split;
-    info.gain = best_gain;
-    return info;
+    float G_R = G_sum - G_L;
+    float H_R = H_sum - H_L;
+    float gain = G_L * G_L / (H_L + lambda) + G_R * G_R / (H_R + lambda);
+    if (gain > best_gain) {
+      best_gain = gain;
+      best_split = split;
+    }
   }
+  SplitInfo info;
+  info.feature_id = feature_id;
+  info.split = best_split;
+  info.gain = best_gain;
+  return info;
 }

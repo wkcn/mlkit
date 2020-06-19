@@ -30,6 +30,7 @@ struct Node {
 };
 
 struct SplitInfo {
+  int feature_id;
   float split;
   float gain;
 };
@@ -42,7 +43,7 @@ public:
 private:
   int GetNewNodeID();
   int CreateNode(Vec<float> &residual, const std::vector<int> &sample_ids, const std::vector<int> &feature_ids);
-  SplitInfo GetSplitInfo(const std::vector<int> &sample_ids, int feature_id, const Vec<float> &gradients, const Vec<float> &hessians);
+  SplitInfo GetSplitInfo(const std::vector<int> &sample_ids, int feature_id, const Vec<float> &gradients, const float G_sum, const Vec<float> &hessians, const float H_sum);
 private:
   std::vector<int> trees;
   LogisticLoss loss;

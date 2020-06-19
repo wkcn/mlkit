@@ -10,9 +10,6 @@
 
 #include "./boosted_tree_impl.h"
 
-#define OMP_PARALLEL_FOR \
-  _Pragma("omp parallel for")
-
 BoostedTree::BoostedTree(const BoostedTreeParam &param) : pImpl(new Impl(param)) {
 }
 
@@ -57,7 +54,7 @@ void BoostedTree::Impl::train(const CSRMatrix<float> &X, const Vec<float> &Y) {
 Vec<float> BoostedTree::Impl::predict(const CSRMatrix<float> &X) {
   const int N = X.length();
   Vec<float> preds(N);
-  OMP_PARALLEL_FOR
+  #pragma omp parallel for num_threads(param_.n_jobs)
   for (int i = 0; i < N; ++i) {
     CSRRow x = X[i];
     preds[i] = predict_one(x); 
@@ -105,7 +102,6 @@ int BoostedTree::Impl::CreateNode(Vec<float> &residual, const std::vector<int> &
 
   const size_t num_samples = sample_ids.size();
   Vec<float> part_residual(num_samples);
-  OMP_PARALLEL_FOR
   for (int i = 0; i < num_samples; ++i) {
     part_residual[i] = residual[sample_ids[i]];
   }
@@ -122,11 +118,9 @@ int BoostedTree::Impl::CreateNode(Vec<float> &residual, const std::vector<int> &
   if (!gen_leaf && !feature_ids.empty()) {
     // compute gradient and hessian
     Vec<float> gradients(num_samples), hessians(num_samples);
-    OMP_PARALLEL_FOR
     for (int i = 0; i < num_samples; ++i) {
       gradients[i] = loss.gradient(pred, part_residual[i]);
     }
-    OMP_PARALLEL_FOR
     for (int i = 0; i < num_samples; ++i) {
       hessians[i] = loss.hessian(pred, part_residual[i]);
     }
@@ -137,7 +131,7 @@ int BoostedTree::Impl::CreateNode(Vec<float> &residual, const std::vector<int> &
     SplitInfo best_info;
     std::vector<int> new_feature_ids;
     const int num_features = feature_ids.size();
-    OMP_PARALLEL_FOR
+    #pragma omp parallel for num_threads(param_.n_jobs)
     for (int i = 0; i < num_features; ++i) {
       int feature_id = feature_ids[i];
       SplitInfo info = GetSplitInfo(sample_ids, feature_id, gradients, G_sum, hessians, H_sum);
@@ -178,7 +172,6 @@ int BoostedTree::Impl::CreateNode(Vec<float> &residual, const std::vector<int> &
   float pred_factor = pred * param_.learning_rate;
   node.value = pred_factor;
   // update residual
-  OMP_PARALLEL_FOR
   for (int i = 0; i < num_samples; ++i) {
     float &r = residual[sample_ids[i]];
     r -= pred_factor;

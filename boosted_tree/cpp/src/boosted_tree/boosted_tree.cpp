@@ -8,7 +8,7 @@
 
 #include "./boosted_tree_impl.h"
 
-BoostedTree::BoostedTree() : pImpl(new Impl) {
+BoostedTree::BoostedTree(const BoostedTreeParam &param) : pImpl(new Impl(param)) {
 }
 
 BoostedTree::~BoostedTree() = default;
@@ -21,7 +21,7 @@ Vec<float> BoostedTree::predict(const CSRMatrix<float> &X) {
   return pImpl->predict(X);
 }
 
-BoostedTree::Impl::Impl() {
+BoostedTree::Impl::Impl(const BoostedTreeParam &param) : param_(param) {
   lambda = 1;
 }
 
@@ -40,7 +40,7 @@ void BoostedTree::Impl::train(const CSRMatrix<float> &X, const Vec<float> &Y) {
   Vec<float> residual(Y_);
   int iter = 0;
   while (1) {
-    int root = CreateNode(residual, sample_ids, feature_ids);
+    int root = CreateNode(residual, sample_ids, feature_ids, 1);
     trees.push_back(root);
     // returned residual is the predicted value
     // TODO: Check accuracy
@@ -95,7 +95,7 @@ int BoostedTree::Impl::GetNewNodeID() {
   return id;
 }
 
-int BoostedTree::Impl::CreateNode(Vec<float> &residual, const std::vector<int> &sample_ids, const std::vector<int> &feature_ids) {
+int BoostedTree::Impl::CreateNode(Vec<float> &residual, const std::vector<int> &sample_ids, const std::vector<int> &feature_ids, const int depth) {
 
   const int nid = GetNewNodeID();
   Node &node = *nodes_[nid];
@@ -108,12 +108,14 @@ int BoostedTree::Impl::CreateNode(Vec<float> &residual, const std::vector<int> &
 
   float pred = loss.predict(part_residual);
 
-  bool same_label = true;
-  if (sample_ids.size() > 1) {
-    // TODO: 如何在回归问题中中止
-    same_label = false;
+  bool gen_leaf = true;
+  if (param_.max_depth == -1 || depth <= param_.max_depth) {
+    if (sample_ids.size() > 1) {
+      // TODO: 如何在回归问题中中止
+      gen_leaf = false;
+    }
   }
-  if (!same_label && !feature_ids.empty()) {
+  if (!gen_leaf && !feature_ids.empty()) {
     // compute gradient and hessian
     Vec<float> gradients(num_samples), hessians(num_samples);
     for (int i = 0; i < num_samples; ++i) {
@@ -153,8 +155,8 @@ int BoostedTree::Impl::CreateNode(Vec<float> &residual, const std::vector<int> &
       }
 
       // subtree
-      node.left = CreateNode(residual, left_sample_ids, new_feature_ids);
-      node.right = CreateNode(residual, right_sample_ids, new_feature_ids);
+      node.left = CreateNode(residual, left_sample_ids, new_feature_ids, depth + 1);
+      node.right = CreateNode(residual, right_sample_ids, new_feature_ids, depth + 1);
       return nid;
     }
   }

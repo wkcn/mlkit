@@ -16,7 +16,8 @@ float ComputeAccuracy(const Vec<float> &a, const Vec<float> &b) {
 }
 
 int main(int argc, char **argv) {
-  BoostedTree bst;
+  BoostedTreeParam param;
+  BoostedTree bst(param);
   CSRMatrix<float> X(0, 0);
   Vec<float> Y;
   if (argc > 1) {

@@ -6,6 +6,7 @@
 #include <queue>
 #include <vector>
 
+#include <boosted_tree/boosted_tree.h>
 #include <boosted_tree/csr_matrix.h>
 #include <boosted_tree/loss.h>
 #include <boosted_tree/vec.h>
@@ -37,16 +38,17 @@ struct SplitInfo {
 
 class BoostedTree::Impl {
 public:
-  Impl();
+  Impl(const BoostedTreeParam&);
   void train(const CSRMatrix<float> &X, const Vec<float> &Y);
   Vec<float> predict(const CSRMatrix<float> &X);
   float predict_one(const CSRRow<float> &X);
 private:
   float predict_one_in_a_tree(const CSRRow<float> &X, int root);
   int GetNewNodeID();
-  int CreateNode(Vec<float> &residual, const std::vector<int> &sample_ids, const std::vector<int> &feature_ids);
+  int CreateNode(Vec<float> &residual, const std::vector<int> &sample_ids, const std::vector<int> &feature_ids, const int depth);
   SplitInfo GetSplitInfo(const std::vector<int> &sample_ids, int feature_id, const Vec<float> &gradients, const float G_sum, const Vec<float> &hessians, const float H_sum);
 private:
+  BoostedTreeParam param_;
   std::vector<int> trees;
   SquareLoss loss;
   std::vector<Node*> nodes_;

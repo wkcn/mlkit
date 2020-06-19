@@ -30,10 +30,13 @@ struct Node {
 };
 
 struct SplitInfo {
+  float split;
+  float gain;
 };
 
 class BoostedTree::Impl {
 public:
+  Impl();
   void train(const CSRMatrix<float> &X, const Vec<float> &Y);
   Vec<float> predict(const CSRMatrix<float> &X);
 private:
@@ -48,4 +51,5 @@ private:
   std::mutex nodes_alloc_mtx_;
   CSRMatrix<float> XT_;
   Vec<float> Y_;
+  float lambda;
 };

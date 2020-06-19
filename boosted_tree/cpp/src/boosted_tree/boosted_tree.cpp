@@ -1,3 +1,4 @@
+#include <cfloat>
 #include <iostream>
 #include <vector>
 #include <numeric>
@@ -18,6 +19,10 @@ void BoostedTree::train(const CSRMatrix<float> &X, const Vec<float> &Y) {
 
 Vec<float> BoostedTree::predict(const CSRMatrix<float> &X) {
   return pImpl->predict(X);
+}
+
+BoostedTree::Impl::Impl() {
+  lambda = 1;
 }
 
 void BoostedTree::Impl::train(const CSRMatrix<float> &X, const Vec<float> &Y) {
@@ -91,20 +96,44 @@ SplitInfo BoostedTree::Impl::GetSplitInfo(const std::vector<int> &sample_ids, in
   std::sort(inds.begin(), inds.end(), [&feat](const int a, const int b) {
       return feat[a] < feat[b];
   });
-  size_t num_split = 0;
+  size_t num_splits = 0;
   for (int i = 1; i < inds.size(); ++i) {
     if (feat[inds[i - 1]] != feat[inds[i]]) {
-      ++num_split;
+      ++num_splits;
     }
   }
-  Vec<float> split(num_split);
+  Vec<float> splits(num_splits);
   float last = feat[inds[0]];
   for (int i = 1, j = 0; i < inds.size(); ++i) {
     if (feat[inds[i - 1]] != feat[inds[i]]) {
       float v = feat[inds[i]];
       // get split
-      split[j++] = (last + v) / 2.0;
+      splits[j++] = (last + v) / 2.0;
       last = v;
     }
+  }
+  const float G_sum = Sum(gradients);
+  const float H_sum = Sum(hessians);
+  float G_L = 0, H_L = 0;
+  int si = 0;
+  float best_gain = FLT_MIN;
+  float best_split;
+  for (float split : splits) {
+    while (si < num_samples && feat[inds[si]] < split) {
+      int ind = inds[si++];
+      G_L += gradients[ind]; 
+      H_L += hessians[ind]; 
+      float G_R = G_sum - G_L;
+      float H_R = H_sum - H_L;
+      float gain = G_L * G_L / (H_L + lambda) + G_R * G_R / (H_R + lambda);
+      if (gain > best_gain) {
+        best_gain = gain;
+        best_split = split;
+      }
+    }
+    SplitInfo info;
+    info.split = best_split;
+    info.gain = best_gain;
+    return info;
   }
 }

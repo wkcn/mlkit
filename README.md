@@ -12,4 +12,4 @@ In this repository, I implement some machine learning algorithm from scratch.
 
 
 ## Reference
-- [reference](./REFERENCE.md)
+- [Reference](./REFERENCE.bib)

@@ -46,7 +46,7 @@ private:
   SplitInfo GetSplitInfo(const std::vector<int> &sample_ids, int feature_id, const Vec<float> &gradients, const float G_sum, const Vec<float> &hessians, const float H_sum);
 private:
   std::vector<int> trees;
-  LogisticLoss loss;
+  SquareLoss loss;
   std::vector<Node> nodes_;
   std::queue<int> free_nodes_queue_;
   std::mutex nodes_alloc_mtx_;

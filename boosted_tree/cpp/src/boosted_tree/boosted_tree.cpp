@@ -46,6 +46,7 @@ void BoostedTree::Impl::train(const CSRMatrix<float> &X, const Vec<float> &Y) {
     // TODO: Check accuracy
     float loss = Sum(residual * residual);
     LOG(INFO) << "Iteration: " << iter << " Loss: " << loss;
+    if (loss <= 0) break;
     ++iter;
   }
 }
@@ -114,6 +115,8 @@ int BoostedTree::Impl::CreateNode(Vec<float> &residual, const std::vector<int> &
       // split
       Node node;
       node.is_leaf = false;
+      node.feature_id = best_info.feature_id;
+
       std::vector<int> left_sample_ids, right_sample_ids;
       float split = best_info.split;
       CSRRow sfeat = XT_[best_info.feature_id];
@@ -122,6 +125,8 @@ int BoostedTree::Impl::CreateNode(Vec<float> &residual, const std::vector<int> &
         if (feat[i] < split) left_sample_ids.push_back(sample_ids[i]);
         else right_sample_ids.push_back(sample_ids[i]);
       }
+
+      // subtree
       node.left = CreateNode(residual, left_sample_ids, new_feature_ids);
       node.right = CreateNode(residual, right_sample_ids, new_feature_ids);
       return nid;

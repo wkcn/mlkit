@@ -20,16 +20,24 @@ int main(int argc, char **argv) {
   CSRMatrix<float> X(0, 0);
   Vec<float> Y;
   if (argc > 1) {
-    std::string filename = argv[1];
-    LOG(INFO) << "Open data: " << filename;
-    auto p = ReadLibSVMFile<float, float>(filename);
+    std::string train_fname = argv[1];
+    LOG(INFO) << "Open training data: " << train_fname;
+    auto p = ReadLibSVMFile<float, float>(train_fname);
     X = std::move(p.first);
     Y = std::move(p.second);
     bst.train(X, Y);
     float acc = ComputeAccuracy(bst.predict(X), Y);
     LOG(INFO) << "Training Accuracy: " << acc;
+
+    if (argc > 2) {
+      std::string test_fname = argv[2];
+      LOG(INFO) << "Open training data: " << test_fname;
+      auto p = ReadLibSVMFile<float, float>(test_fname);
+      float acc = ComputeAccuracy(bst.predict(p.first), p.second);
+      LOG(INFO) << "Testing Accuracy: " << acc;
+    }
   } else {
-    LOG(INFO) << "Please pass the argument `filename`";
+    LOG(INFO) << "./main <train_fname> <test_fname>";
   }
   return 0;
 }

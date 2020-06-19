@@ -29,7 +29,13 @@ struct CSRChunk {
 template<typename T>
 class CSRMatrix {
 public:
+  CSRMatrix() = default;
+  CSRMatrix(const CSRMatrix&) = default;
+  CSRMatrix(CSRMatrix&&) = default;
   CSRMatrix(dim_t rows, dim_t cols);
+  CSRMatrix& operator=(const CSRMatrix&) = default;
+  CSRMatrix& operator=(CSRMatrix&&) = default;
+
   void reset(const COOMatrix<T> &smat);
   void reset(const std::vector<dim_t> &row,
              const std::vector<dim_t> &col,

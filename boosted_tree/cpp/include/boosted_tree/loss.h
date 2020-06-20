@@ -51,11 +51,13 @@ struct LogisticLoss {
   }
   template <typename T>
   inline static T gradient(T x, T y) {
-    return T(1) / (T(1) + exp(-x)) - y;
+    return predict(x) - y;
   }
   template <typename T>
   inline static T hessian(T x, T y) {
-    return T(1) / (exp(-x) + exp(x) + T(2));
+    const T eps = 1e-16;
+    const T pred = predict(x);
+    return std::max(pred * (T(1) - pred), eps);
   }
   template <typename T>
   inline static T predict(T x) {
@@ -63,9 +65,9 @@ struct LogisticLoss {
   }
   template <typename T>
   inline static T estimate(const Vec<T> &Y) {
-    const T eps = 1e-6;
-    T mean = clip(std::accumulate(Y.begin(), Y.end(), T(0)) / Y.size(), eps, T(1) - eps);
-    return log(mean / (T(1) - mean));
+    const T eps = 1e-16;
+    T mean = std::max(std::accumulate(Y.begin(), Y.end(), T(0)) / Y.size(), eps);
+    return -log(T(1) / mean - T(1));
   }
 };
 

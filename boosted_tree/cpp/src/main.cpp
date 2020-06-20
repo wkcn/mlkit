@@ -24,9 +24,30 @@ float ComputeRMSE(const Vec<float> &a, const Vec<float> &b) {
   return sqrt(Mean(tmp));
 }
 
+void EvaluatePR(const Vec<float> &a, const Vec<float> &b, const std::string &prefix) {
+  CHECK_EQ(a.size(), b.size());
+  // predict, target
+  int TP = 0, TN = 0, FP = 0, FN = 0;
+  for (int i = 0; i < a.size(); ++i) {
+    bool pa = a[i] >= 0.5;
+    bool pb = b[i] >= 0.5;
+    if (pa && pb) ++TP;
+    if (pa && !pb) ++FP;
+    if (!pa && !pb) ++TN;
+    if (!pa && pb) ++FN;
+  }
+  float P = float(TP) / (TP + FP);
+  float R = float(TP) / (TP + FN);
+  float F = P + R > 0 ? float(2 * P * R) / (P + R) : 0;
+  LOG(INFO) << prefix << " Precision: " << P;
+  LOG(INFO) << prefix << " Recall: " << R;
+  LOG(INFO) << prefix << " F1: " << F;
+}
+
 void Evaluate(const Vec<float> &a, const Vec<float> &b, const std::string &prefix) {
   LOG(INFO) << prefix << " Accuracy: " << ComputeAccuracy(a, b);
   LOG(INFO) << prefix << " RMSE: " << ComputeRMSE(a, b);
+  EvaluatePR(a, b, prefix);
 }
 
 void GenMissingValue(CSRMatrix<float> &X, float ratio) {

@@ -100,7 +100,6 @@ int BoostedTree::Impl::GetNewNodeID() {
 }
 
 int BoostedTree::Impl::CreateNode(Vec<float> &integrals, const std::vector<int> &sample_ids, const std::vector<int> &feature_ids, const int depth) {
-
   const int nid = GetNewNodeID();
   Node &node = *nodes_[nid];
 
@@ -109,13 +108,10 @@ int BoostedTree::Impl::CreateNode(Vec<float> &integrals, const std::vector<int> 
   for (int i = 0; i < num_samples; ++i) {
     part_integrals[i] = integrals[sample_ids[i]];
   }
-  float mean_integral = Mean(part_integrals);
   Vec<float> part_labels(num_samples);
   for (int i = 0; i < num_samples; ++i) {
     part_labels[i] = Y_[sample_ids[i]];
   }
-
-  float pred = objective.estimate(part_labels) - mean_integral;
 
   bool gen_leaf = true;
   if (param_.max_depth == -1 || depth <= param_.max_depth) {
@@ -124,18 +120,18 @@ int BoostedTree::Impl::CreateNode(Vec<float> &integrals, const std::vector<int> 
       gen_leaf = false;
     }
   }
-  if (!gen_leaf && !feature_ids.empty()) {
-    // compute gradient and hessian
-    Vec<float> gradients(num_samples), hessians(num_samples);
-    for (int i = 0; i < num_samples; ++i) {
-      gradients[i] = objective.gradient(part_integrals[i], part_labels[i]);
-    }
-    for (int i = 0; i < num_samples; ++i) {
-      hessians[i] = objective.hessian(part_integrals[i], part_labels[i]);
-    }
-    const float G_sum = Sum(gradients);
-    const float H_sum = Sum(hessians);
+  // compute gradient and hessian
+  Vec<float> gradients(num_samples), hessians(num_samples);
+  for (int i = 0; i < num_samples; ++i) {
+    gradients[i] = objective.gradient(part_integrals[i], part_labels[i]);
+  }
+  for (int i = 0; i < num_samples; ++i) {
+    hessians[i] = objective.hessian(part_integrals[i], part_labels[i]);
+  }
+  const float G_sum = Sum(gradients);
+  const float H_sum = Sum(hessians);
 
+  if (!gen_leaf && !feature_ids.empty()) {
     float best_gain = FLT_MIN;
     SplitInfo best_info;
     std::vector<int> new_feature_ids;
@@ -187,6 +183,9 @@ int BoostedTree::Impl::CreateNode(Vec<float> &integrals, const std::vector<int> 
 
   // leaf
   node.is_leaf = true;
+  // float mean_integral = Mean(part_integrals);
+  // float pred = objective.estimate(part_labels) - mean_integral;
+  float pred = - G_sum / (H_sum + param_.reg_lambda);
   float pred_factor = pred * param_.learning_rate;
   node.value = pred_factor;
   // update integrals

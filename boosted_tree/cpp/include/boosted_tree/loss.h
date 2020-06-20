@@ -14,6 +14,9 @@ inline T clip(T value, T min_value, T max_value) {
   return value;
 }
 
+struct Loss {
+};
+
 struct SquareLoss {
   template <typename T>
   inline static T compute(T x, T y) {

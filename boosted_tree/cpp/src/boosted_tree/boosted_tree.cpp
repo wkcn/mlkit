@@ -74,7 +74,9 @@ float BoostedTree::Impl::predict_one_in_a_tree(const CSRRow<float> &X, int root)
   while (1) {
     const Node &node = *nodes_[root];
     if (node.is_leaf) return node.value;
-    bool is_left = X[node.feature_id] < node.value;
+    float feat = X[node.feature_id];
+    bool is_left = std::isnan(feat) ? node.miss_left : \
+                   X[node.feature_id] < node.value;
     root = is_left ? node.left : node.right; 
   }
   return 0;
@@ -149,6 +151,7 @@ int BoostedTree::Impl::CreateNode(Vec<float> &residual, const std::vector<int> &
       // split
       node.is_leaf = false;
       node.feature_id = best_info.feature_id;
+      node.miss_left = best_info.miss_left;
 
       std::vector<int> left_sample_ids, right_sample_ids;
       float split = best_info.split;
@@ -178,17 +181,35 @@ int BoostedTree::Impl::CreateNode(Vec<float> &residual, const std::vector<int> &
   return nid; 
 }
 
+float BoostedTree::Impl::GetGain(float G_L, float G_R, float H_L, float H_R) const {
+  float gain = G_L * G_L / (H_L + param_.reg_lambda) + G_R * G_R / (H_R + param_.reg_lambda);
+  return gain;
+}
+
 SplitInfo BoostedTree::Impl::GetSplitInfo(const std::vector<int> &sample_ids, int feature_id, const Vec<float> &gradients, const float G_sum, const Vec<float> &hessians, const float H_sum) {
   CSRRow sfeat = XT_[feature_id];
   const size_t num_samples = sample_ids.size();
   Vec<float> feat = sfeat.at(sample_ids.begin(), sample_ids.end());
   std::vector<int> inds(num_samples);
-  std::iota(inds.begin(), inds.end(), 0);
+  float G_missing = 0, H_missing = 0;
+  int j = 0;
+  // remove nan in inds
+  for (int i = 0; i < num_samples; ++i) {
+    if (std::isnan(feat[i])) {
+      G_missing += gradients[i];
+      H_missing += hessians[i];
+    } else {
+      inds[j++] = i;
+    }
+  }
+  inds.resize(j);
   std::sort(inds.begin(), inds.end(), [&feat](const int a, const int b) {
       return feat[a] < feat[b];
   });
+  const size_t num_nonmiss_samples = j;
+  const bool exist_missing = num_nonmiss_samples < num_samples;
   size_t num_splits = 0;
-  for (int i = 1; i < inds.size(); ++i) {
+  for (int i = 1; i < num_nonmiss_samples; ++i) {
     if (feat[inds[i - 1]] != feat[inds[i]]) {
       ++num_splits;
     }
@@ -201,7 +222,7 @@ SplitInfo BoostedTree::Impl::GetSplitInfo(const std::vector<int> &sample_ids, in
   TEST_GT(num_splits, 0);
   Vec<float> splits(num_splits);
   float last = feat[inds[0]];
-  for (int i = 1, j = 0; i < inds.size(); ++i) {
+  for (int i = 1, j = 0; i < num_nonmiss_samples; ++i) {
     if (feat[inds[i - 1]] != feat[inds[i]]) {
       float v = feat[inds[i]];
       // get split
@@ -213,24 +234,43 @@ SplitInfo BoostedTree::Impl::GetSplitInfo(const std::vector<int> &sample_ids, in
   int si = 0;
   float best_gain = FLT_MIN;
   float best_split;
+  bool best_miss_left;
   for (float split : splits) {
-    while (si < num_samples && feat[inds[si]] < split) {
+    while (si < num_nonmiss_samples && feat[inds[si]] < split) {
       int ind = inds[si];
       G_L += gradients[ind]; 
       H_L += hessians[ind]; 
       ++si;
     }
-    float G_R = G_sum - G_L;
-    float H_R = H_sum - H_L;
-    float gain = G_L * G_L / (H_L + param_.reg_lambda) + G_R * G_R / (H_R + param_.reg_lambda);
-    if (gain > best_gain) {
-      best_gain = gain;
-      best_split = split;
+    {
+      // try enumerate missing value goto right
+      float G_R = G_sum - G_L;
+      float H_R = H_sum - H_L;
+      float gain = GetGain(G_L, G_R, H_L, H_R);
+      if (gain > best_gain) {
+        best_gain = gain;
+        best_split = split;
+        best_miss_left = false;
+      }
+    }
+    if (exist_missing) {
+      // try enumerate missing value goto left
+      float G_L2 = G_L + G_missing;
+      float H_L2 = H_L + H_missing;
+      float G_R2 = G_sum - G_L2;
+      float H_R2 = H_sum - H_L2;
+      float gain = GetGain(G_L2, G_R2, H_L2, H_R2);
+      if (gain > best_gain) {
+        best_gain = gain;
+        best_split = split;
+        best_miss_left = true;
+      }
     }
   }
   SplitInfo info;
   info.feature_id = feature_id;
   info.split = best_split;
   info.gain = best_gain;
+  info.miss_left = best_miss_left;
   return info;
 }

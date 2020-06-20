@@ -51,6 +51,7 @@ void GenMissingValue(CSRMatrix<float> &X, float ratio) {
 int main(int argc, char **argv) {
   BoostedTreeParam param;
   param.learning_rate = 1;
+  param.n_estimators = 5;
   const float missing_ratio = 0;
 
   BoostedTree bst(param);

@@ -10,6 +10,10 @@
 
 #include "./boosted_tree_impl.h"
 
+
+#include <iostream>
+using namespace std;
+
 BoostedTree::BoostedTree(const BoostedTreeParam &param) : pImpl(new Impl(param)) {
 }
 
@@ -27,24 +31,28 @@ BoostedTree::Impl::Impl(const BoostedTreeParam &param) : param_(param) {
 }
 
 void BoostedTree::Impl::train(const CSRMatrix<float> &X, const Vec<float> &Y) {
-  const int N = X.length();
-  const int M = X[0].length();
-  CHECK_EQ(N, Y.size());
-  LOG(INFO) << "Input Data: (" << N << " X " << M << ")";
+  const int num_samples = X.length();
+  const int num_features = X[0].length();
+  CHECK_EQ(num_samples, Y.size());
+  LOG(INFO) << "Input Data: (" << num_samples << " X " << num_features << ")";
   XT_ = X.transpose();
   Y_ = std::move(Y);
   LOG(INFO) << "Start training...";
-  std::vector<int> sample_ids(N);
+  std::vector<int> sample_ids(num_samples);
   std::iota(sample_ids.begin(), sample_ids.end(), 0);
-  std::vector<int> feature_ids(M);
+  std::vector<int> feature_ids(num_features);
   std::iota(feature_ids.begin(), feature_ids.end(), 0);
-  Vec<float> residual(Y_);
+  Vec<float> integrals(num_samples, 0);
   for (int iter = 1; iter <= param_.n_estimators; ++iter) {
-    int root = CreateNode(residual, sample_ids, feature_ids, 1);
+    int root = CreateNode(integrals, sample_ids, feature_ids, 1);
+    cout << endl;
     trees.push_back(root);
-    // returned residual is the predicted value
-    // TODO: Check accuracy
-    float loss = Sum(residual * residual);
+    Vec<float> pred = predict(X);
+    float loss = 0;
+    for (int i = 0; i < num_samples; ++i) {
+      loss += objective.compute(pred[i], Y[i]);
+    }
+    loss /= num_samples;
     LOG(INFO) << "Iteration: " << iter << " Loss: " << loss;
     if (loss <= 1e-3) break;
   }
@@ -73,7 +81,7 @@ float BoostedTree::Impl::predict_one(const CSRRow<float> &X) {
 float BoostedTree::Impl::predict_one_in_a_tree(const CSRRow<float> &X, int root) {
   while (1) {
     const Node &node = *nodes_[root];
-    if (node.is_leaf) return loss.predict(node.value);
+    if (node.is_leaf) return objective.predict(node.value);
     float feat = X[node.feature_id];
     bool is_left = std::isnan(feat) ? node.miss_left : \
                    X[node.feature_id] < node.value;
@@ -97,18 +105,22 @@ int BoostedTree::Impl::GetNewNodeID() {
   return id;
 }
 
-int BoostedTree::Impl::CreateNode(Vec<float> &residual, const std::vector<int> &sample_ids, const std::vector<int> &feature_ids, const int depth) {
+int BoostedTree::Impl::CreateNode(Vec<float> &integrals, const std::vector<int> &sample_ids, const std::vector<int> &feature_ids, const int depth) {
 
   const int nid = GetNewNodeID();
   Node &node = *nodes_[nid];
 
   const size_t num_samples = sample_ids.size();
-  Vec<float> part_residual(num_samples);
+  Vec<float> part_integrals(num_samples);
   for (int i = 0; i < num_samples; ++i) {
-    part_residual[i] = residual[sample_ids[i]];
+    part_integrals[i] = integrals[sample_ids[i]];
+  }
+  Vec<float> part_labels(num_samples);
+  for (int i = 0; i < num_samples; ++i) {
+    part_labels[i] = Y_[sample_ids[i]];
   }
 
-  float pred = loss.estimate(part_residual);
+  float pred = objective.estimate(part_labels);
 
   bool gen_leaf = true;
   if (param_.max_depth == -1 || depth <= param_.max_depth) {
@@ -121,10 +133,10 @@ int BoostedTree::Impl::CreateNode(Vec<float> &residual, const std::vector<int> &
     // compute gradient and hessian
     Vec<float> gradients(num_samples), hessians(num_samples);
     for (int i = 0; i < num_samples; ++i) {
-      gradients[i] = loss.gradient(pred, part_residual[i]);
+      gradients[i] = objective.gradient(part_integrals[i], part_labels[i]);
     }
     for (int i = 0; i < num_samples; ++i) {
-      hessians[i] = loss.hessian(pred, part_residual[i]);
+      hessians[i] = objective.hessian(part_integrals[i], part_labels[i]);
     }
     const float G_sum = Sum(gradients);
     const float H_sum = Sum(hessians);
@@ -171,8 +183,8 @@ int BoostedTree::Impl::CreateNode(Vec<float> &residual, const std::vector<int> &
       }
 
       // subtree
-      node.left = CreateNode(residual, left_sample_ids, new_feature_ids, depth + 1);
-      node.right = CreateNode(residual, right_sample_ids, new_feature_ids, depth + 1);
+      node.left = CreateNode(integrals, left_sample_ids, new_feature_ids, depth + 1);
+      node.right = CreateNode(integrals, right_sample_ids, new_feature_ids, depth + 1);
       return nid;
     }
   }
@@ -181,10 +193,10 @@ int BoostedTree::Impl::CreateNode(Vec<float> &residual, const std::vector<int> &
   node.is_leaf = true;
   float pred_factor = pred * param_.learning_rate;
   node.value = pred_factor;
-  // update residual
+  // update integrals
   for (int i = 0; i < num_samples; ++i) {
-    float &r = residual[sample_ids[i]];
-    r -= pred_factor;
+    float &r = integrals[sample_ids[i]];
+    r += pred_factor;
   }
   return nid; 
 }

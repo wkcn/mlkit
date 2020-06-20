@@ -47,13 +47,13 @@ public:
 private:
   float predict_one_in_a_tree(const CSRRow<float> &X, int root);
   int GetNewNodeID();
-  int CreateNode(Vec<float> &residual, const std::vector<int> &sample_ids, const std::vector<int> &feature_ids, const int depth);
+  int CreateNode(Vec<float> &integrals, const std::vector<int> &sample_ids, const std::vector<int> &feature_ids, const int depth);
   inline float GetGain(float G_L, float G_R, float H_L, float H_R) const;
   SplitInfo GetSplitInfo(const std::vector<int> &sample_ids, int feature_id, const Vec<float> &gradients, const float G_sum, const Vec<float> &hessians, const float H_sum);
 private:
   BoostedTreeParam param_;
   std::vector<int> trees;
-  LogisticLoss loss;
+  SquareLoss objective;
   std::vector<Node*> nodes_;
   std::queue<int> free_nodes_queue_;
   std::mutex nodes_alloc_mtx_;

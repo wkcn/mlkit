@@ -73,7 +73,7 @@ float BoostedTree::Impl::predict_one(const CSRRow<float> &X) {
 float BoostedTree::Impl::predict_one_in_a_tree(const CSRRow<float> &X, int root) {
   while (1) {
     const Node &node = *nodes_[root];
-    if (node.is_leaf) return node.value;
+    if (node.is_leaf) return loss.predict(node.value);
     float feat = X[node.feature_id];
     bool is_left = std::isnan(feat) ? node.miss_left : \
                    X[node.feature_id] < node.value;
@@ -108,7 +108,7 @@ int BoostedTree::Impl::CreateNode(Vec<float> &residual, const std::vector<int> &
     part_residual[i] = residual[sample_ids[i]];
   }
 
-  float pred = loss.predict(part_residual);
+  float pred = loss.estimate(part_residual);
 
   bool gen_leaf = true;
   if (param_.max_depth == -1 || depth <= param_.max_depth) {

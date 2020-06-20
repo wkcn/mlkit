@@ -69,13 +69,13 @@ float BoostedTree::Impl::predict_one(const CSRRow<float> &X) {
   for (int root : trees) {
     out += predict_one_in_a_tree(X, root);
   }
-  return out;
+  return objective.predict(out);
 }
 
 float BoostedTree::Impl::predict_one_in_a_tree(const CSRRow<float> &X, int root) {
   while (1) {
     const Node &node = *nodes_[root];
-    if (node.is_leaf) return objective.predict(node.value);
+    if (node.is_leaf) return node.value;
     const float feat = X[node.feature_id];
     bool is_left = std::isnan(feat) ? node.miss_left : \
                    feat < node.value;

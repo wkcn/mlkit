@@ -46,8 +46,10 @@ struct SquareLoss {
 struct LogisticLoss {
   template <typename T>
   inline static T compute(T x, T y) {
-    return y * log(T(1) + exp(-x)) + \
-      (T(1) - y) * log(T(1) + exp(x));
+    const T eps = 1e-16;
+    const T pred = predict(x);
+    return -y * log(std::max(pred, eps)) - \
+      (T(1) - y) * log(std::max(T(1) - pred, eps));
   }
   template <typename T>
   inline static T gradient(T x, T y) {
@@ -67,7 +69,7 @@ struct LogisticLoss {
   inline static T estimate(const Vec<T> &Y) {
     const T eps = 1e-16;
     T mean = std::max(std::accumulate(Y.begin(), Y.end(), T(0)) / Y.size(), eps);
-    return -log(T(1) / mean - T(1));
+    return -log(std::max(T(1) / mean - T(1), eps));
   }
 };
 

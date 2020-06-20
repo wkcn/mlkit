@@ -53,7 +53,7 @@ private:
 private:
   BoostedTreeParam param_;
   std::vector<int> trees;
-  SquareLoss objective;
+  LogisticLoss objective;
   std::vector<Node*> nodes_;
   std::queue<int> free_nodes_queue_;
   std::mutex nodes_alloc_mtx_;

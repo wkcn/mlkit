@@ -10,10 +10,6 @@
 
 #include "./boosted_tree_impl.h"
 
-
-#include <iostream>
-using namespace std;
-
 BoostedTree::BoostedTree(const BoostedTreeParam &param) : pImpl(new Impl(param)) {
 }
 
@@ -45,18 +41,16 @@ void BoostedTree::Impl::train(const CSRMatrix<float> &X, const Vec<float> &Y) {
   Vec<float> integrals(num_samples, 0);
   for (int iter = 1; iter <= param_.n_estimators; ++iter) {
     int root = CreateNode(integrals, sample_ids, feature_ids, 1);
-    cout << endl;
     trees.push_back(root);
     Vec<float> pred = predict(X);
     float loss = 0;
     for (int i = 0; i < num_samples; ++i) {
-      loss += objective.compute(pred[i], Y[i]);
+      loss += objective.compute(pred[i], Y_[i]);
     }
     loss /= num_samples;
     LOG(INFO) << "Iteration: " << iter << " Loss: " << loss;
     if (loss <= 1e-3) break;
   }
-  LOG(INFO) << "Train over";
 }
 
 Vec<float> BoostedTree::Impl::predict(const CSRMatrix<float> &X) {
@@ -82,9 +76,9 @@ float BoostedTree::Impl::predict_one_in_a_tree(const CSRRow<float> &X, int root)
   while (1) {
     const Node &node = *nodes_[root];
     if (node.is_leaf) return objective.predict(node.value);
-    float feat = X[node.feature_id];
+    const float feat = X[node.feature_id];
     bool is_left = std::isnan(feat) ? node.miss_left : \
-                   X[node.feature_id] < node.value;
+                   feat < node.value;
     root = is_left ? node.left : node.right; 
   }
   return 0;
@@ -115,12 +109,13 @@ int BoostedTree::Impl::CreateNode(Vec<float> &integrals, const std::vector<int> 
   for (int i = 0; i < num_samples; ++i) {
     part_integrals[i] = integrals[sample_ids[i]];
   }
+  float mean_integral = Mean(part_integrals);
   Vec<float> part_labels(num_samples);
   for (int i = 0; i < num_samples; ++i) {
     part_labels[i] = Y_[sample_ids[i]];
   }
 
-  float pred = objective.estimate(part_labels);
+  float pred = objective.estimate(part_labels) - mean_integral;
 
   bool gen_leaf = true;
   if (param_.max_depth == -1 || depth <= param_.max_depth) {
@@ -164,9 +159,10 @@ int BoostedTree::Impl::CreateNode(Vec<float> &integrals, const std::vector<int> 
       node.is_leaf = false;
       node.feature_id = best_info.feature_id;
       node.miss_left = best_info.miss_left;
+      const float split = best_info.split;
+      node.value = split;
 
       std::vector<int> left_sample_ids, right_sample_ids;
-      float split = best_info.split;
       CSRRow sfeat = XT_[best_info.feature_id];
       Vec<float> feat = sfeat.at(sample_ids.begin(), sample_ids.end());
       for (int i = 0; i < num_samples; ++i) {

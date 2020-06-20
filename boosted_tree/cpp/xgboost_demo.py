@@ -7,6 +7,15 @@ def compute_acc(a, b):
         return 0
     return np.count_nonzero((a >= 0.5) & (b >= 0.5)) / len(a)
 
+def compute_rmse(a, b):
+    return np.sqrt(np.square(a - b).mean())
+
+def evaluate(preds, labels, prefix):
+    acc = compute_acc(preds, labels)
+    print(f"{prefix} Accuracy: {acc}")
+    rmse = compute_rmse(preds, labels)
+    print(f"{prefix} RMSE: {rmse}")
+
 # read in data
 dtrain = xgb.DMatrix('./data/agaricus.txt.train')
 dtest = xgb.DMatrix('./data/agaricus.txt.test')
@@ -18,8 +27,6 @@ bst = xgb.train(param, dtrain, num_round)
 
 # make prediction
 train_preds = bst.predict(dtrain)
-train_acc = compute_acc(train_preds, dtrain.get_label())
-print(f"Training Accuracy: {train_acc}")
+evaluate(train_preds, dtrain.get_label(), 'Training')
 test_preds = bst.predict(dtest)
-test_acc = compute_acc(test_preds, dtest.get_label())
-print(f"Testing Accuracy: {test_acc}")
+evaluate(test_preds, dtest.get_label(), 'Testing')

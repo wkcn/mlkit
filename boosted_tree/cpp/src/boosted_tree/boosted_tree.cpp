@@ -158,7 +158,15 @@ int BoostedTree::Impl::CreateNode(Vec<float> &residual, const std::vector<int> &
       CSRRow sfeat = XT_[best_info.feature_id];
       Vec<float> feat = sfeat.at(sample_ids.begin(), sample_ids.end());
       for (int i = 0; i < num_samples; ++i) {
-        if (feat[i] < split) left_sample_ids.push_back(sample_ids[i]);
+        /*
+         * left:
+         *   isnan(feat[i]) == false && feat[i] < split
+         *   isnan(feat[i]) == true && node.miss_left == true
+         *   (A && B) || (!A && C)
+         */
+        if ((!std::isnan(feat[i]) && feat[i] < split) || \
+            (std::isnan(feat[i]) && node.miss_left))
+          left_sample_ids.push_back(sample_ids[i]);
         else right_sample_ids.push_back(sample_ids[i]);
       }
 

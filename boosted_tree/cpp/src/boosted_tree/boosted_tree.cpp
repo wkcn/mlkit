@@ -24,6 +24,8 @@ Vec<float> BoostedTree::predict(const CSRMatrix<float> &X) {
 }
 
 BoostedTree::Impl::Impl(const BoostedTreeParam &param) : param_(param) {
+  objective = Registry<ObjectiveBase>::Find(param_.objective);
+  CHECK_NE(objective, nullptr) << "Objective " << param_.objective << " not found : (";
 }
 
 void BoostedTree::Impl::train(const CSRMatrix<float> &X, const Vec<float> &Y) {
@@ -45,7 +47,7 @@ void BoostedTree::Impl::train(const CSRMatrix<float> &X, const Vec<float> &Y) {
     Vec<float> pred = predict(X);
     float loss = 0;
     for (int i = 0; i < num_samples; ++i) {
-      loss += objective.compute(pred[i], Y_[i]);
+      loss += objective->compute(pred[i], Y_[i]);
     }
     loss /= num_samples;
     LOG(INFO) << "Iteration: " << iter << " Loss: " << loss;
@@ -69,7 +71,7 @@ float BoostedTree::Impl::predict_one(const CSRRow<float> &X) {
   for (int root : trees) {
     out += predict_one_in_a_tree(X, root);
   }
-  return objective.predict(out);
+  return objective->predict(out);
 }
 
 float BoostedTree::Impl::predict_one_in_a_tree(const CSRRow<float> &X, int root) {
@@ -123,10 +125,10 @@ int BoostedTree::Impl::CreateNode(Vec<float> &integrals, const std::vector<int> 
   // compute gradient and hessian
   Vec<float> gradients(num_samples), hessians(num_samples);
   for (int i = 0; i < num_samples; ++i) {
-    gradients[i] = objective.gradient(part_integrals[i], part_labels[i]);
+    gradients[i] = objective->gradient(part_integrals[i], part_labels[i]);
   }
   for (int i = 0; i < num_samples; ++i) {
-    hessians[i] = objective.hessian(part_integrals[i], part_labels[i]);
+    hessians[i] = objective->hessian(part_integrals[i], part_labels[i]);
   }
   const float G_sum = Sum(gradients);
   const float H_sum = Sum(hessians);
@@ -184,7 +186,7 @@ int BoostedTree::Impl::CreateNode(Vec<float> &integrals, const std::vector<int> 
   // leaf
   node.is_leaf = true;
   // float mean_integral = Mean(part_integrals);
-  // float pred = objective.estimate(part_labels) - mean_integral;
+  // float pred = objective->estimate(part_labels) - mean_integral;
   float pred = - G_sum / (H_sum + param_.reg_lambda);
   float pred_factor = pred * param_.learning_rate;
   node.value = pred_factor;

@@ -1,10 +1,11 @@
-#ifndef BOOSTED_TREE_LOSS_H_
-#define BOOSTED_TREE_LOSS_H_
+#ifndef BOOSTED_TREE_OBJECTIVE_H_
+#define BOOSTED_TREE_OBJECTIVE_H_
 
 #include <algorithm>
 #include <cmath>
 #include <numeric>
 
+#include "./registry.h"
 #include "./vec.h"
 
 template <typename T>
@@ -14,7 +15,36 @@ inline T clip(T value, T min_value, T max_value) {
   return value;
 }
 
-struct Loss {
+class ObjectiveBase {
+public:
+  typedef float T;
+  virtual inline T compute(T x, T y) = 0;
+  virtual inline T gradient(T x, T y) = 0;
+  virtual inline T hessian(T x, T y) = 0;
+  virtual inline T predict(T x) = 0;
+  virtual inline T estimate(const Vec<T> &Y) = 0;
+};
+REGISTRY_ENABLE(ObjectiveBase);
+
+template <typename Loss>
+class Objective : public ObjectiveBase {
+public:
+  typedef float T;
+  inline T compute(T x, T y) {
+    return Loss::compute(x, y);
+  }
+  inline T gradient(T x, T y) {
+    return Loss::gradient(x, y);
+  }
+  inline T hessian(T x, T y) {
+    return Loss::hessian(x, y);
+  }
+  inline T predict(T x) {
+    return Loss::predict(x);
+  }
+  inline T estimate(const Vec<T> &Y) {
+    return Loss::estimate(Y);
+  }
 };
 
 struct SquareLoss {
@@ -75,5 +105,14 @@ struct LogisticLoss {
     return -log(std::max(T(1) / mean - T(1), eps));
   }
 };
+
+class ObjectiveBaseRegistry {
+public:
+  ObjectiveBaseRegistry() {
+    Registry<ObjectiveBase>::Register("reg:linear", new Objective<SquareLoss>());
+    Registry<ObjectiveBase>::Register("binary:logistic", new Objective<LogisticLoss>());
+  }
+};
+static ObjectiveBaseRegistry registry_; 
 
 #endif

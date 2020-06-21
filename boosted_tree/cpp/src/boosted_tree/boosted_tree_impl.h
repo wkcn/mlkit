@@ -7,10 +7,10 @@
 #include <vector>
 
 #include <boosted_tree/boosted_tree.h>
-#include <boosted_tree/csr_matrix.h>
-#include <boosted_tree/loss.h>
-#include <boosted_tree/vec.h>
 #include <boosted_tree/array.h>
+#include <boosted_tree/vec.h>
+#include <boosted_tree/csr_matrix.h>
+#include <boosted_tree/objective.h>
 
 struct Node {
   /*
@@ -53,7 +53,7 @@ private:
 private:
   BoostedTreeParam param_;
   std::vector<int> trees;
-  LogisticLoss objective;
+  ObjectiveBase *objective;
   std::vector<Node*> nodes_;
   std::queue<int> free_nodes_queue_;
   std::mutex nodes_alloc_mtx_;

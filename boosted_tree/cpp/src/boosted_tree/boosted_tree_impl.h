@@ -48,7 +48,7 @@ private:
   float predict_one_in_a_tree(const CSRRow<float> &X, int root);
   int GetNewNodeID();
   int CreateNode(Vec<float> &integrals, const std::vector<int> &sample_ids, const std::vector<int> &feature_ids, const int depth);
-  inline float GetGain(float G_L, float G_R, float H_L, float H_R) const;
+  inline float GetGain(float G, float H) const;
   SplitInfo GetSplitInfo(const std::vector<int> &sample_ids, int feature_id, const Vec<float> &gradients, const float G_sum, const Vec<float> &hessians, const float H_sum);
 private:
   BoostedTreeParam param_;

@@ -143,10 +143,11 @@ int BoostedTree::Impl::CreateNode(Vec<float> &integrals, const std::vector<int> 
   }
   const float G_sum = Sum(gradients);
   const float H_sum = Sum(hessians);
+  float best_gain = GetGain(G_sum, H_sum);
 
   if (!gen_leaf && !feature_ids.empty()) {
-    float best_gain = FLT_MIN;
     SplitInfo best_info;
+    best_info.feature_id = -1;
     std::vector<int> new_feature_ids;
     const int num_features = feature_ids.size();
     #pragma omp parallel for num_threads(param_.n_jobs)
@@ -163,7 +164,7 @@ int BoostedTree::Impl::CreateNode(Vec<float> &integrals, const std::vector<int> 
       }
     }
 
-    if (best_gain != FLT_MIN) {
+    if (best_info.feature_id != -1) {
       // split
       node.is_leaf = false;
       node.feature_id = best_info.feature_id;
@@ -209,8 +210,8 @@ int BoostedTree::Impl::CreateNode(Vec<float> &integrals, const std::vector<int> 
   return nid; 
 }
 
-float BoostedTree::Impl::GetGain(float G_L, float G_R, float H_L, float H_R) const {
-  float gain = G_L * G_L / (H_L + param_.reg_lambda) + G_R * G_R / (H_R + param_.reg_lambda);
+float BoostedTree::Impl::GetGain(float G, float H) const {
+  float gain = G * G / (H + param_.reg_lambda);
   return gain;
 }
 
@@ -274,7 +275,7 @@ SplitInfo BoostedTree::Impl::GetSplitInfo(const std::vector<int> &sample_ids, in
       // try enumerate missing value goto right
       float G_R = G_sum - G_L;
       float H_R = H_sum - H_L;
-      float gain = GetGain(G_L, G_R, H_L, H_R);
+      float gain = GetGain(G_L, H_L) + GetGain(G_R, H_R);
       if (gain > best_gain) {
         best_gain = gain;
         best_split = split;
@@ -287,7 +288,7 @@ SplitInfo BoostedTree::Impl::GetSplitInfo(const std::vector<int> &sample_ids, in
       float H_L2 = H_L + H_missing;
       float G_R2 = G_sum - G_L2;
       float H_R2 = H_sum - H_L2;
-      float gain = GetGain(G_L2, G_R2, H_L2, H_R2);
+      float gain = GetGain(G_L2, H_L2) + GetGain(G_R2, H_R2);
       if (gain > best_gain) {
         best_gain = gain;
         best_split = split;

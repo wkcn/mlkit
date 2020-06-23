@@ -33,7 +33,7 @@ param.n_estimators = 2
 model = bst.BoostedTree(param)
 
 train_X, train_Y = bst.ReadLibSVMFile(train_fname)
-test_X, test_Y = bst.ReadLibSVMFile(train_fname)
+test_X, test_Y = bst.ReadLibSVMFile(test_fname)
 
 model.train(train_X, train_Y)
 

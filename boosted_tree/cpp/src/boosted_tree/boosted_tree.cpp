@@ -108,7 +108,7 @@ int BoostedTree::Impl::GetNewNodeID() {
     id = free_nodes_queue_.front();
     free_nodes_queue_.pop();
   }
-  TEST_LT(id, nodes_.size());
+  DCHECK_LT(id, nodes_.size());
   return id;
 }
 
@@ -249,7 +249,7 @@ SplitInfo BoostedTree::Impl::GetSplitInfo(const std::vector<int> &sample_ids, in
     info.feature_id = -1;
     return info;
   }
-  TEST_GT(num_splits, 0);
+  DCHECK_GT(num_splits, 0);
   Vec<float> splits(num_splits);
   float last = feat[inds[0]];
   for (int i = 1, j = 0; i < num_nonmiss_samples; ++i) {

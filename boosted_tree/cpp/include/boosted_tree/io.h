@@ -50,7 +50,7 @@ std::pair<CSRMatrix<TX>, Vec<TY> > ReadLibSVMFile(
     ++rows;
   }
 
-  TEST_EQ(rows, labels.size());
+  DCHECK_EQ(rows, labels.size());
   CSRMatrix<TX> smat(rows, cols);
   smat.reset(row, col, data);
   return {smat, labels};

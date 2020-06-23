@@ -55,12 +55,21 @@ class MobulaLogger {
 #define CHECK_LT(x, y) CHECK_BINARY_OP(<, x, y)
 #define CHECK_GT(x, y) CHECK_BINARY_OP(>, x, y)
 
-#define TEST_EQ CHECK_EQ
-#define TEST_NE CHECK_NE
-#define TEST_LE CHECK_LE
-#define TEST_GE CHECK_GE
-#define TEST_LT CHECK_LT
-#define TEST_GT CHECK_GT
+#ifdef MOBULA_LOG_DEBUG
+#define DCHECK_EQ CHECK_EQ
+#define DCHECK_NE CHECK_NE
+#define DCHECK_LE CHECK_LE
+#define DCHECK_GE CHECK_GE
+#define DCHECK_LT CHECK_LT
+#define DCHECK_GT CHECK_GT
+#else
+#define DCHECK_EQ
+#define DCHECK_NE
+#define DCHECK_LE
+#define DCHECK_GE
+#define DCHECK_LT
+#define DCHECK_GT
+#endif
 
 }  // namespace mobula
 

@@ -152,7 +152,7 @@ void CSRMatrix<T>::reset(const std::vector<dim_t> &row,
       last_offset += vs.size();
     }
   }
-  TEST_EQ(last_offset, values.size());
+  DCHECK_EQ(last_offset, values.size());
   offsets.back() = last_offset;
 }
 

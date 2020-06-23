@@ -24,11 +24,11 @@ Vec<float> BoostedTree::predict(const CSRMatrix<float> &X) {
 }
 
 BoostedTree::Impl::Impl(const BoostedTreeParam &param) : param_(param) {
-  objective = Registry<ObjectiveBase>::Find(param_.objective);
+  objective = Registry<Objective<float> >::Find(param_.objective);
   if (objective == nullptr) {
     std::string msg = "objective function [" + param_.objective + "] not found\n";
     msg += "Supported objective functions: ";
-    std::vector<std::string> names = Registry<ObjectiveBase>::List();
+    std::vector<std::string> names = Registry<Objective<float> >::List();
     bool first = true;
     for (const std::string &name : names) {
       if (first) first = false;

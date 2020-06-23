@@ -53,7 +53,7 @@ private:
 private:
   BoostedTreeParam param_;
   std::vector<int> trees;
-  ObjectiveBase *objective;
+  Objective<float> *objective;
   std::vector<Node*> nodes_;
   std::queue<int> free_nodes_queue_;
   std::mutex nodes_alloc_mtx_;

@@ -143,7 +143,7 @@ int BoostedTree::Impl::CreateNode(Vec<float> &integrals, const std::vector<int> 
   }
   const float G_sum = Sum(gradients);
   const float H_sum = Sum(hessians);
-  float best_gain = GetGain(G_sum, H_sum);
+  float best_gain = GetGain(G_sum, H_sum) + param_.gamma * 2;
 
   if (!gen_leaf && !feature_ids.empty()) {
     SplitInfo best_info;
@@ -216,6 +216,7 @@ float BoostedTree::Impl::GetGain(float G, float H) const {
 }
 
 SplitInfo BoostedTree::Impl::GetSplitInfo(const std::vector<int> &sample_ids, int feature_id, const Vec<float> &gradients, const float G_sum, const Vec<float> &hessians, const float H_sum) {
+  // Basic exact greedy algorithm
   CSRRow sfeat = XT_[feature_id];
   const size_t num_samples = sample_ids.size();
   Vec<float> feat = sfeat.at(sample_ids.begin(), sample_ids.end());

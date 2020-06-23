@@ -14,6 +14,7 @@ struct BoostedTreeParam {
   int n_estimators = 100;
   std::string objective = "reg:linear";
   float reg_lambda = 1;
+  float gamma = 0;
   int n_jobs = 1;
 };
 

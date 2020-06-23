@@ -27,6 +27,7 @@ void Registry<Entry>::Register(const std::string &name, Entry *entry) {
 template<typename Entry>
 Entry* Registry<Entry>::Find(const std::string &name) {
   Registry<Entry> &self = Get();
+  std::lock_guard<std::mutex> lck(self.mtx_);
   auto p = self.fmap_.find(name);
   return p != self.fmap_.end() ? (p->second).get() : nullptr;
 }
@@ -35,6 +36,7 @@ template<typename Entry>
 std::vector<std::string> Registry<Entry>::List() {
   Registry<Entry> &self = Get();
   std::vector<std::string> names;
+  std::lock_guard<std::mutex> lck(self.mtx_);
   for (const auto &p : self.fmap_) names.push_back(p.first);
   return names;
 }

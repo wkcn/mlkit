@@ -1,9 +1,9 @@
 #pragma once
+#include <boosted_tree/csr_matrix.h>
+#include <gtest/gtest.h>
+
 #include <initializer_list>
 #include <vector>
-
-#include <gtest/gtest.h>
-#include <boosted_tree/csr_matrix.h>
 
 TEST(TestCSRMatrix, todense) {
   std::vector<dim_t> row{0, 0, 1, 2, 2, 2};
@@ -18,9 +18,7 @@ TEST(TestCSRMatrix, todense) {
 }
 
 TEST(TestCSRMatrix, getitem) {
-  std::vector<std::vector<int> > mat{{1, 0, 2},
-                                     {0, 0, 3},
-                                     {4, 5, 6}};
+  std::vector<std::vector<int>> mat{{1, 0, 2}, {0, 0, 3}, {4, 5, 6}};
   std::vector<dim_t> row;
   std::vector<dim_t> col;
   std::vector<int> data;
@@ -43,15 +41,9 @@ TEST(TestCSRMatrix, getitem) {
     }
   }
 
-  std::vector<std::vector<int> > orders = {{0, 1, 2},
-                                           {0, 2, 1},
-                                           {1, 0, 2},
-                                           {1, 2, 0},
-                                           {2, 0, 1},
-                                           {2, 1, 0},
-                                           {0, 1, 1},
-                                           {1, 0, 1},
-                                           {2, 2, 1}};
+  std::vector<std::vector<int>> orders = {{0, 1, 2}, {0, 2, 1}, {1, 0, 2},
+                                          {1, 2, 0}, {2, 0, 1}, {2, 1, 0},
+                                          {0, 1, 1}, {1, 0, 1}, {2, 2, 1}};
   for (int r = 0; r < 3; ++r) {
     for (auto &order : orders) {
       std::vector<int> left = smat[r].at(order.begin(), order.end());
@@ -65,10 +57,7 @@ TEST(TestCSRMatrix, getitem) {
 }
 
 TEST(TestCSRMatrix, transpose) {
-  std::vector<std::vector<int> > mat{{1, 0, 2},
-                                     {0, 0, 3},
-                                     {4, 5, 6},
-                                     {7, 4, 0}};
+  std::vector<std::vector<int>> mat{{1, 0, 2}, {0, 0, 3}, {4, 5, 6}, {7, 4, 0}};
   std::vector<dim_t> row;
   std::vector<dim_t> col;
   std::vector<int> data;
@@ -92,9 +81,7 @@ TEST(TestCSRMatrix, transpose) {
 }
 
 TEST(TestCSRMatrix, setitem) {
-  std::vector<std::vector<int> > mat{{1, 0, 2},
-                                     {0, 0, 3},
-                                     {4, 5, 6}};
+  std::vector<std::vector<int>> mat{{1, 0, 2}, {0, 0, 3}, {4, 5, 6}};
   std::vector<dim_t> row;
   std::vector<dim_t> col;
   std::vector<int> data;
@@ -110,9 +97,7 @@ TEST(TestCSRMatrix, setitem) {
   CSRMatrix<int> smat(3, 3);
   smat.reset(row, col, data);
 
-  std::vector<std::vector<int> > new_mat{{5, 3, 2},
-                                         {0, 4, 0},
-                                         {7, 0, 6}};
+  std::vector<std::vector<int>> new_mat{{5, 3, 2}, {0, 4, 0}, {7, 0, 6}};
   for (int r = 0; r < 3; ++r) {
     for (int c = 0; c < 3; ++c) {
       smat[r].set(c, new_mat[r][c]);
@@ -128,9 +113,7 @@ TEST(TestCSRMatrix, setitem) {
 }
 
 TEST(TestCSRRow, todense) {
-  std::vector<std::vector<int> > mat{{1, 0, 2},
-                                     {0, 0, 3},
-                                     {4, 5, 6}};
+  std::vector<std::vector<int>> mat{{1, 0, 2}, {0, 0, 3}, {4, 5, 6}};
   std::vector<dim_t> row;
   std::vector<dim_t> col;
   std::vector<int> data;

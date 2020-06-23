@@ -1,12 +1,12 @@
-#include <cmath>
-#include <cstdlib>
-#include <vector>
-#include <string>
-
 #include <boosted_tree/boosted_tree.h>
 #include <boosted_tree/csr_matrix.h>
 #include <boosted_tree/io.h>
 #include <boosted_tree/logging.h>
+
+#include <cmath>
+#include <cstdlib>
+#include <string>
+#include <vector>
 
 float ComputeAccuracy(const Vec<float> &a, const Vec<float> &b) {
   if (a.size() != b.size()) return 0;
@@ -20,11 +20,12 @@ float ComputeAccuracy(const Vec<float> &a, const Vec<float> &b) {
 float ComputeRMSE(const Vec<float> &a, const Vec<float> &b) {
   if (a.size() != b.size()) return 0;
   Vec<float> tmp = a - b;
-  std::for_each(tmp.begin(), tmp.end(), [](float &x){x *= x;});
+  std::for_each(tmp.begin(), tmp.end(), [](float &x) { x *= x; });
   return sqrt(Mean(tmp));
 }
 
-void EvaluatePR(const Vec<float> &a, const Vec<float> &b, const std::string &prefix) {
+void EvaluatePR(const Vec<float> &a, const Vec<float> &b,
+                const std::string &prefix) {
   CHECK_EQ(a.size(), b.size());
   // predict, target
   int TP = 0, TN = 0, FP = 0, FN = 0;
@@ -44,7 +45,8 @@ void EvaluatePR(const Vec<float> &a, const Vec<float> &b, const std::string &pre
   LOG(INFO) << prefix << " F1: " << F;
 }
 
-void Evaluate(const Vec<float> &a, const Vec<float> &b, const std::string &prefix) {
+void Evaluate(const Vec<float> &a, const Vec<float> &b,
+              const std::string &prefix) {
   LOG(INFO) << prefix << " Accuracy: " << ComputeAccuracy(a, b);
   LOG(INFO) << prefix << " RMSE: " << ComputeRMSE(a, b);
   EvaluatePR(a, b, prefix);

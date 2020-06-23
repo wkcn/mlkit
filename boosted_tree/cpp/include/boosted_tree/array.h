@@ -7,15 +7,15 @@
 #include <initializer_list>
 #include <iostream>
 
-#define DEF_ARRAY_OP_SCALAR_FUNC(op)  \
+#define DEF_ARRAY_OP_SCALAR_FUNC(op)     \
   Array<T, N> &operator op(const T &b) { \
-    for (int i = 0; i < N; ++i) {   \
-      (*this)[i] op b;              \
-    }                               \
-    return *this;                   \
+    for (int i = 0; i < N; ++i) {        \
+      (*this)[i] op b;                   \
+    }                                    \
+    return *this;                        \
   }
 
-#define DEF_ARRAY_OP_ARRAY_FUNC(op)                  \
+#define DEF_ARRAY_OP_ARRAY_FUNC(op)                \
   Array<T, N> &operator op(const Array<T, N> &b) { \
     for (int i = 0; i < N; ++i) {                  \
       (*this)[i] op b[i];                          \
@@ -34,7 +34,9 @@ class Array : public std::array<T, N> {
     }
   }
   template <class InputIterator>
-  Array(InputIterator first, InputIterator last) : std::array<T, N>(first, last) {}
+  Array(InputIterator first, InputIterator last)
+      : std::array<T, N>(first, last) {}
+
  public:
   // scalar
   DEF_ARRAY_OP_SCALAR_FUNC(+=)

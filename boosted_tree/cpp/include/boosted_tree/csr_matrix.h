@@ -10,69 +10,72 @@
 #include <vector>
 
 #include "./coo_matrix.h"
-#include "./matrix.h"
 #include "./logging.h"
+#include "./matrix.h"
 #include "./vec.h"
 
 typedef int64_t dim_t;
 
-template<typename T>
+template <typename T>
 class CSRRow;
 
-template<typename T>
+template <typename T>
 struct CSRChunk {
   std::vector<dim_t> offsets;  // row offsets
   std::vector<dim_t> indices;  // row indices
   std::vector<T> values;
 };
 
-template<typename T>
+template <typename T>
 class CSRMatrix {
-public:
+ public:
   CSRMatrix() = default;
-  CSRMatrix(const CSRMatrix&) = default;
-  CSRMatrix(CSRMatrix&&) = default;
+  CSRMatrix(const CSRMatrix &) = default;
+  CSRMatrix(CSRMatrix &&) = default;
   CSRMatrix(dim_t rows, dim_t cols);
-  CSRMatrix& operator=(const CSRMatrix&) = default;
-  CSRMatrix& operator=(CSRMatrix&&) = default;
+  CSRMatrix &operator=(const CSRMatrix &) = default;
+  CSRMatrix &operator=(CSRMatrix &&) = default;
 
   void reset(const COOMatrix<T> &smat);
-  void reset(const std::vector<dim_t> &row,
-             const std::vector<dim_t> &col,
+  void reset(const std::vector<dim_t> &row, const std::vector<dim_t> &col,
              const std::vector<T> &data);
   void compress();
   Matrix<T> todense() const;
   COOMatrix<T> tocoo() const;
   CSRMatrix<T> transpose() const;
-public:
+
+ public:
   CSRRow<T> operator[](dim_t row) const;
   dim_t length() const;
-private:
-  std::shared_ptr<CSRChunk<T> > data_;
+
+ private:
+  std::shared_ptr<CSRChunk<T>> data_;
   dim_t rows_, cols_;
   friend CSRRow<T>;
 };
 
-template<typename T>
+template <typename T>
 class CSRRow {
-public:
-  CSRRow(std::shared_ptr<CSRChunk<T> > data, dim_t row, dim_t cols);
+ public:
+  CSRRow(std::shared_ptr<CSRChunk<T>> data, dim_t row, dim_t cols);
   T operator[](dim_t col) const;
   template <typename Iterator>
   Vec<T> at(Iterator first, Iterator last) const;
   void set(dim_t col, const T &value);
   Vec<T> todense() const;
   dim_t length() const;
-public:
+
+ public:
   template <typename U, typename VT>
   friend bool operator==(const CSRRow<U> &a, const VT &b);
-private:
-  std::shared_ptr<CSRChunk<T> > data_;
+
+ private:
+  std::shared_ptr<CSRChunk<T>> data_;
   dim_t row_;
   dim_t cols_;
-}; 
+};
 
-template<typename T, typename VT>
+template <typename T, typename VT>
 bool operator==(const CSRRow<T> &a, const VT &b) {
   auto &offsets = a.data_->offsets;
   auto &indices = a.data_->indices;
@@ -90,7 +93,7 @@ bool operator==(const CSRRow<T> &a, const VT &b) {
   return true;
 }
 
-template<typename T>
+template <typename T>
 CSRMatrix<T>::CSRMatrix(dim_t rows, dim_t cols) {
   CHECK_GE(rows, 0);
   CHECK_GE(cols, 0);
@@ -100,12 +103,12 @@ CSRMatrix<T>::CSRMatrix(dim_t rows, dim_t cols) {
   data_->offsets.resize(rows_ + 1, 0);
 }
 
-template<typename T>
+template <typename T>
 CSRRow<T> CSRMatrix<T>::operator[](dim_t row) const {
   return CSRRow<T>(data_, row, cols_);
 }
 
-template<typename T>
+template <typename T>
 dim_t CSRMatrix<T>::length() const {
   return rows_;
 }
@@ -116,11 +119,11 @@ void CSRMatrix<T>::reset(const COOMatrix<T> &smat) {
   reset(chunk.row, chunk.col, chunk.data);
 }
 
-template<typename T>
+template <typename T>
 void CSRMatrix<T>::reset(const std::vector<dim_t> &row,
                          const std::vector<dim_t> &col,
                          const std::vector<T> &data) {
-  std::vector<std::vector<std::pair<dim_t, T> > > rec(rows_);
+  std::vector<std::vector<std::pair<dim_t, T>>> rec(rows_);
   CHECK_EQ(row.size(), col.size());
   CHECK_EQ(row.size(), data.size());
 
@@ -141,7 +144,7 @@ void CSRMatrix<T>::reset(const std::vector<dim_t> &row,
 
   for (dim_t r = 0; r < rows_; ++r) {
     auto &vs = rec[r];
-    offsets[r] = last_offset; // the begin element of this row
+    offsets[r] = last_offset;  // the begin element of this row
     if (!vs.empty()) {
       // offsets[r]:offsets[r+1]
       sort(vs.begin(), vs.end());
@@ -156,7 +159,7 @@ void CSRMatrix<T>::reset(const std::vector<dim_t> &row,
   offsets.back() = last_offset;
 }
 
-template<typename T>
+template <typename T>
 void CSRMatrix<T>::compress() {
   auto &offsets = data_->offsets;
   auto &indices = data_->indices;
@@ -179,7 +182,7 @@ void CSRMatrix<T>::compress() {
   values.resize(vi);
 }
 
-template<typename T>
+template <typename T>
 Matrix<T> CSRMatrix<T>::todense() const {
   Matrix<T> mat(rows_, cols_, 0);
   auto &offsets = data_->offsets;
@@ -187,15 +190,15 @@ Matrix<T> CSRMatrix<T>::todense() const {
   auto &values = data_->values;
   for (dim_t r = 0; r < rows_; ++r) {
     if (offsets[r] != -1) {
-      for (dim_t i = offsets[r]; i < offsets[r+1]; ++i) {
+      for (dim_t i = offsets[r]; i < offsets[r + 1]; ++i) {
         mat[r][indices[i]] = values[i];
-      } 
+      }
     }
   }
   return mat;
 }
 
-template<typename T>
+template <typename T>
 COOMatrix<T> CSRMatrix<T>::tocoo() const {
   COOMatrix<T> smat(rows_, cols_);
   auto &offsets = data_->offsets;
@@ -204,7 +207,7 @@ COOMatrix<T> CSRMatrix<T>::tocoo() const {
   COOChunk<T> &chunk = smat.data();
   for (dim_t r = 0; r < rows_; ++r) {
     if (offsets[r] != -1) {
-      for (dim_t i = offsets[r]; i < offsets[r+1]; ++i) {
+      for (dim_t i = offsets[r]; i < offsets[r + 1]; ++i) {
         chunk.row.push_back(r);
         chunk.col.push_back(indices[i]);
         chunk.data.push_back(values[i]);
@@ -214,7 +217,7 @@ COOMatrix<T> CSRMatrix<T>::tocoo() const {
   return smat;
 }
 
-template<typename T>
+template <typename T>
 CSRMatrix<T> CSRMatrix<T>::transpose() const {
   COOMatrix<T> smat = tocoo();
   COOChunk<T> &chunk = smat.data();
@@ -223,13 +226,11 @@ CSRMatrix<T> CSRMatrix<T>::transpose() const {
   return res;
 }
 
-template<typename T>
-CSRRow<T>::CSRRow(
-    std::shared_ptr<CSRChunk<T> > data, dim_t row, dim_t cols) :
-    data_(data), row_(row), cols_(cols) {
-}
+template <typename T>
+CSRRow<T>::CSRRow(std::shared_ptr<CSRChunk<T>> data, dim_t row, dim_t cols)
+    : data_(data), row_(row), cols_(cols) {}
 
-template<typename T>
+template <typename T>
 T CSRRow<T>::operator[](dim_t col) const {
   auto &offsets = data_->offsets;
   auto &indices = data_->indices;
@@ -238,7 +239,7 @@ T CSRRow<T>::operator[](dim_t col) const {
   const dim_t offset_end = offsets[row_ + 1];
   const auto rindices_begin = indices.begin() + offset_begin;
   const auto rindices_end = indices.begin() + offset_end;
-  auto p = lower_bound(rindices_begin, rindices_end, col); 
+  auto p = lower_bound(rindices_begin, rindices_end, col);
   return (p != rindices_end && *p == col) ? values[p - indices.begin()] : 0;
 }
 
@@ -252,13 +253,11 @@ Vec<T> CSRRow<T>::at(Iterator first, Iterator last) const {
   const dim_t offset_begin = offsets[row_];
   const dim_t offset_end = offsets[row_ + 1];
 
-
   const int n = cols.size();
   std::vector<dim_t> inds(n);
   iota(inds.begin(), inds.end(), 0);
-  std::sort(inds.begin(), inds.end(), [&cols](const int a, const int b) {
-      return cols[a] < cols[b];
-  });
+  std::sort(inds.begin(), inds.end(),
+            [&cols](const int a, const int b) { return cols[a] < cols[b]; });
   Vec<T> out(n);
   auto p = indices.begin() + offset_begin;
   const auto rindices_end = indices.begin() + offset_end;
@@ -280,7 +279,7 @@ void CSRRow<T>::set(dim_t col, const T &value) {
   const dim_t offset_end = offsets[row_ + 1];
   const auto rindices_begin = indices.begin() + offset_begin;
   const auto rindices_end = indices.begin() + offset_end;
-  auto p = lower_bound(rindices_begin, rindices_end, col); 
+  auto p = lower_bound(rindices_begin, rindices_end, col);
   dim_t offset = p - indices.begin();
   if (p != rindices_end && *p == col) {
     values[offset] = value;
@@ -293,11 +292,11 @@ void CSRRow<T>::set(dim_t col, const T &value) {
     }
     for (dim_t r = row_ + 1; r < offsets.size(); ++r) {
       ++offsets[r];
-    } 
+    }
   }
 }
 
-template<typename T>
+template <typename T>
 Vec<T> CSRRow<T>::todense() const {
   auto &offsets = data_->offsets;
   auto &indices = data_->indices;
@@ -316,7 +315,7 @@ Vec<T> CSRRow<T>::todense() const {
   return vec;
 }
 
-template<typename T>
+template <typename T>
 dim_t CSRRow<T>::length() const {
   return cols_;
 }

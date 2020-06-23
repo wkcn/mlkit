@@ -2,9 +2,9 @@
 #define BOOSTED_TREE_IO_H_
 
 #include <algorithm>
-#include <string>
 #include <fstream>
 #include <sstream>
+#include <string>
 #include <utility>
 
 #include "./csr_matrix.h"
@@ -13,8 +13,7 @@
 #include "./vec.h"
 
 template <typename TX, typename TY>
-std::pair<CSRMatrix<TX>, Vec<TY> > ReadLibSVMFile(
-    const std::string &filename) {
+std::pair<CSRMatrix<TX>, Vec<TY>> ReadLibSVMFile(const std::string &filename) {
   std::ifstream fin(filename);
   if (!fin.is_open()) {
     LOG(INFO) << "Open file " << filename << " fail! :(";
@@ -30,7 +29,8 @@ std::pair<CSRMatrix<TX>, Vec<TY> > ReadLibSVMFile(
   while (getline(fin, buf)) {
     std::stringstream ss;
     ss << buf;
-    TY label; ss >> label;
+    TY label;
+    ss >> label;
     labels.push_back(label);
     std::string data_str;
     while (ss >> data_str) {

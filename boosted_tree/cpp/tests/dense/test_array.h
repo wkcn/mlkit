@@ -1,11 +1,11 @@
 #pragma once
 
-#include <initializer_list>
-#include <array>
-
-#include <gtest/gtest.h>
 #include <boosted_tree/array.h>
 #include <boosted_tree/csr_matrix.h>
+#include <gtest/gtest.h>
+
+#include <array>
+#include <initializer_list>
 
 TEST(TestArray, test_op) {
   Array<float, 3> a{1, 2, 3};

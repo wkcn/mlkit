@@ -1,17 +1,16 @@
-#include <cfloat>
-#include <iostream>
-#include <vector>
-#include <numeric>
-
-#include <omp.h>
-
 #include <boosted_tree/boosted_tree.h>
 #include <boosted_tree/logging.h>
+#include <omp.h>
+
+#include <cfloat>
+#include <iostream>
+#include <numeric>
+#include <vector>
 
 #include "./boosted_tree_impl.h"
 
-BoostedTree::BoostedTree(const BoostedTreeParam &param) : pImpl(new Impl(param)) {
-}
+BoostedTree::BoostedTree(const BoostedTreeParam &param)
+    : pImpl(new Impl(param)) {}
 
 BoostedTree::~BoostedTree() = default;
 
@@ -24,15 +23,18 @@ Vec<float> BoostedTree::predict(const CSRMatrix<float> &X) {
 }
 
 BoostedTree::Impl::Impl(const BoostedTreeParam &param) : param_(param) {
-  objective = Registry<Objective<float> >::Find(param_.objective);
+  objective = Registry<Objective<float>>::Find(param_.objective);
   if (objective == nullptr) {
-    std::string msg = "objective function [" + param_.objective + "] not found\n";
+    std::string msg =
+        "objective function [" + param_.objective + "] not found\n";
     msg += "Supported objective functions: ";
-    std::vector<std::string> names = Registry<Objective<float> >::List();
+    std::vector<std::string> names = Registry<Objective<float>>::List();
     bool first = true;
     for (const std::string &name : names) {
-      if (first) first = false;
-      else msg += ", ";
+      if (first)
+        first = false;
+      else
+        msg += ", ";
       msg += name;
     }
     LOG(FATAL) << msg;
@@ -69,10 +71,10 @@ void BoostedTree::Impl::train(const CSRMatrix<float> &X, const Vec<float> &Y) {
 Vec<float> BoostedTree::Impl::predict(const CSRMatrix<float> &X) {
   const int N = X.length();
   Vec<float> preds(N);
-  #pragma omp parallel for num_threads(param_.n_jobs)
+#pragma omp parallel for num_threads(param_.n_jobs)
   for (int i = 0; i < N; ++i) {
     CSRRow x = X[i];
-    preds[i] = predict_one(x); 
+    preds[i] = predict_one(x);
   }
   return preds;
 }
@@ -85,14 +87,14 @@ float BoostedTree::Impl::predict_one(const CSRRow<float> &X) {
   return objective->predict(out);
 }
 
-float BoostedTree::Impl::predict_one_in_a_tree(const CSRRow<float> &X, int root) {
+float BoostedTree::Impl::predict_one_in_a_tree(const CSRRow<float> &X,
+                                               int root) {
   while (1) {
     const Node &node = *nodes_[root];
     if (node.is_leaf) return node.value;
     const float feat = X[node.feature_id];
-    bool is_left = std::isnan(feat) ? node.miss_left : \
-                   feat < node.value;
-    root = is_left ? node.left : node.right; 
+    bool is_left = std::isnan(feat) ? node.miss_left : feat < node.value;
+    root = is_left ? node.left : node.right;
   }
   return 0;
 }
@@ -112,7 +114,10 @@ int BoostedTree::Impl::GetNewNodeID() {
   return id;
 }
 
-int BoostedTree::Impl::CreateNode(Vec<float> &integrals, const std::vector<int> &sample_ids, const std::vector<int> &feature_ids, const int depth) {
+int BoostedTree::Impl::CreateNode(Vec<float> &integrals,
+                                  const std::vector<int> &sample_ids,
+                                  const std::vector<int> &feature_ids,
+                                  const int depth) {
   const int nid = GetNewNodeID();
   Node &node = *nodes_[nid];
 
@@ -150,11 +155,12 @@ int BoostedTree::Impl::CreateNode(Vec<float> &integrals, const std::vector<int> 
     best_info.feature_id = -1;
     std::vector<int> new_feature_ids;
     const int num_features = feature_ids.size();
-    #pragma omp parallel for num_threads(param_.n_jobs)
+#pragma omp parallel for num_threads(param_.n_jobs)
     for (int i = 0; i < num_features; ++i) {
       int feature_id = feature_ids[i];
-      SplitInfo info = GetSplitInfo(sample_ids, feature_id, gradients, G_sum, hessians, H_sum);
-      #pragma omp critical
+      SplitInfo info = GetSplitInfo(sample_ids, feature_id, gradients, G_sum,
+                                    hessians, H_sum);
+#pragma omp critical
       if (info.feature_id != -1) {
         new_feature_ids.push_back(info.feature_id);
         if (info.gain > best_gain) {
@@ -182,15 +188,18 @@ int BoostedTree::Impl::CreateNode(Vec<float> &integrals, const std::vector<int> 
          *   isnan(feat[i]) == true && node.miss_left == true
          *   (A && B) || (!A && C)
          */
-        if ((!std::isnan(feat[i]) && feat[i] < split) || \
+        if ((!std::isnan(feat[i]) && feat[i] < split) ||
             (std::isnan(feat[i]) && node.miss_left))
           left_sample_ids.push_back(sample_ids[i]);
-        else right_sample_ids.push_back(sample_ids[i]);
+        else
+          right_sample_ids.push_back(sample_ids[i]);
       }
 
       // subtree
-      node.left = CreateNode(integrals, left_sample_ids, new_feature_ids, depth + 1);
-      node.right = CreateNode(integrals, right_sample_ids, new_feature_ids, depth + 1);
+      node.left =
+          CreateNode(integrals, left_sample_ids, new_feature_ids, depth + 1);
+      node.right =
+          CreateNode(integrals, right_sample_ids, new_feature_ids, depth + 1);
       return nid;
     }
   }
@@ -199,7 +208,7 @@ int BoostedTree::Impl::CreateNode(Vec<float> &integrals, const std::vector<int> 
   node.is_leaf = true;
   // float mean_integral = Mean(part_integrals);
   // float pred = objective->estimate(part_labels) - mean_integral;
-  float pred = - G_sum / (H_sum + param_.reg_lambda);
+  float pred = -G_sum / (H_sum + param_.reg_lambda);
   float pred_factor = pred * param_.learning_rate;
   node.value = pred_factor;
   // update integrals
@@ -207,7 +216,7 @@ int BoostedTree::Impl::CreateNode(Vec<float> &integrals, const std::vector<int> 
     float &r = integrals[sample_ids[i]];
     r += pred_factor;
   }
-  return nid; 
+  return nid;
 }
 
 float BoostedTree::Impl::GetGain(float G, float H) const {
@@ -215,7 +224,12 @@ float BoostedTree::Impl::GetGain(float G, float H) const {
   return gain;
 }
 
-SplitInfo BoostedTree::Impl::GetSplitInfo(const std::vector<int> &sample_ids, int feature_id, const Vec<float> &gradients, const float G_sum, const Vec<float> &hessians, const float H_sum) {
+SplitInfo BoostedTree::Impl::GetSplitInfo(const std::vector<int> &sample_ids,
+                                          int feature_id,
+                                          const Vec<float> &gradients,
+                                          const float G_sum,
+                                          const Vec<float> &hessians,
+                                          const float H_sum) {
   // Basic exact greedy algorithm
   CSRRow sfeat = XT_[feature_id];
   const size_t num_samples = sample_ids.size();
@@ -233,9 +247,8 @@ SplitInfo BoostedTree::Impl::GetSplitInfo(const std::vector<int> &sample_ids, in
     }
   }
   inds.resize(j);
-  std::sort(inds.begin(), inds.end(), [&feat](const int a, const int b) {
-      return feat[a] < feat[b];
-  });
+  std::sort(inds.begin(), inds.end(),
+            [&feat](const int a, const int b) { return feat[a] < feat[b]; });
   const size_t num_nonmiss_samples = j;
   const bool exist_missing = num_nonmiss_samples < num_samples;
   size_t num_splits = 0;
@@ -268,8 +281,8 @@ SplitInfo BoostedTree::Impl::GetSplitInfo(const std::vector<int> &sample_ids, in
   for (float split : splits) {
     while (si < num_nonmiss_samples && feat[inds[si]] < split) {
       int ind = inds[si];
-      G_L += gradients[ind]; 
-      H_L += hessians[ind]; 
+      G_L += gradients[ind];
+      H_L += hessians[ind];
       ++si;
     }
     {

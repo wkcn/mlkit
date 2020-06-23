@@ -1,11 +1,11 @@
 #pragma once
 
+#include <boosted_tree/csr_matrix.h>
+#include <boosted_tree/vec.h>
+#include <gtest/gtest.h>
+
 #include <initializer_list>
 #include <vector>
-
-#include <gtest/gtest.h>
-#include <boosted_tree/vec.h>
-#include <boosted_tree/csr_matrix.h>
 
 TEST(TestVec, test_op) {
   Vec<float> a{1, 2, 3};

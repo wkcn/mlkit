@@ -16,6 +16,7 @@ struct BoostedTreeParam {
   float reg_lambda = 1;
   float gamma = 0;
   int n_jobs = 1;
+  int seed = 39;
 };
 
 class BoostedTree {

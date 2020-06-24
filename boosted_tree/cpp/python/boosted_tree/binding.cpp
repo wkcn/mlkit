@@ -17,6 +17,7 @@ PYBIND11_MODULE(boosted_tree, m) {
     .def_readwrite("reg_lambda", &BoostedTreeParam::reg_lambda)
     .def_readwrite("gamma", &BoostedTreeParam::gamma)
     .def_readwrite("n_jobs", &BoostedTreeParam::n_jobs);
+    .def_readwrite("seed", &BoostedTreeParam::seed);
 
   py::class_<BoostedTree>(m, "BoostedTree")
     .def(py::init<const BoostedTreeParam&>())

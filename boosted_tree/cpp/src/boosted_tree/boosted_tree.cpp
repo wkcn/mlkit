@@ -2,6 +2,7 @@
 #include <boosted_tree/logging.h>
 #include <omp.h>
 
+#include <cstdlib>
 #include <cfloat>
 #include <iostream>
 #include <numeric>
@@ -42,6 +43,7 @@ BoostedTree::Impl::Impl(const BoostedTreeParam &param) : param_(param) {
 }
 
 void BoostedTree::Impl::train(const CSRMatrix<float> &X, const Vec<float> &Y) {
+  srand(param_.seed);
   const int num_samples = X.length();
   const int num_features = X[0].length();
   CHECK_EQ(num_samples, Y.size());

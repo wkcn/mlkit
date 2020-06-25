@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <initializer_list>
 #include <numeric>
+#include <utility>
 #include <vector>
 
 #include <iostream>
@@ -26,6 +27,25 @@ public:
     std::vector<Entry> entries; // ordered value, no duplicated values
     Summary() {}
     Summary(const Entry& entry) : entries{entry} {};
+    Summary(std::vector<std::pair<DType, RType> > &data) {
+      if (data.empty()) return;
+      std::sort(data.begin(), data.end());
+      DType value = data[0].first;
+      // wsum (<=), last_wsum(<)
+      RType wsum(data[0].second), last_wsum(0);
+      entries.reserve(data.size());
+      for (int i = 1; i < data.size(); ++i) {
+        if (value == data[i].first) {
+          wsum += data[i].second;
+        } else {
+          entries.emplace_back(Entry{value, last_wsum, wsum, wsum - last_wsum});
+          value = data[i].first();
+          last_wsum = wsum;
+          wsum += data[i].second;
+        }
+      }
+      entries.emplace_back(Entry{value, last_wsum, wsum, wsum - last_wsum});
+    }
     inline size_t size() const {
       return entries.size();
     }
@@ -82,13 +102,13 @@ public:
     }
     return out;
   }
-  static Summary Prune(const Summary &a, RType b) {
+  static Summary Prune(const Summary &a, int b) {
     Summary out;
     auto &entries_out = out.entries;
     entries_out.reserve(b + 1);
     const Entry &front = a.front();
     const Entry &back = a.back();
-    RType wsum = std::accumulate(a.entries.begin(), a.entries.end(), RType(0), [](RType acc, const Entry& e) -> RType {
+    RType wsum = std::accumulate(a.entries.begin(), a.entries.end(), RType(0), [](RType acc, const Entry &e) -> RType {
         return acc + e.w;
     });
     int i;

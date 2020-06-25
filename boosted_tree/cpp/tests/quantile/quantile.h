@@ -70,14 +70,14 @@ void CHECK_PRUNE(const summary_t &summary, const int b, std::vector<pair_t> data
   CHECK_EQ(splits.front(), summary.front().value);
   CHECK_EQ(splits.back(), summary.back().value);
   for (float val : splits) {
-    while (i < data.size() && data[i].first <= val) {
+    while (i < data.size() && data[i].first < val) {
       rwsum += data[i].second;
       ++i;
     }
     float r = float(rwsum) / wsum;
     if (first) first = false;
     else {
-      cout << r << ":" << last_r << endl;
+      cout << r << ":" << last_r << " = " << std::abs(r - last_r) << endl;
       CHECK_LT(std::abs(r - last_r), float(1) / b);
     }
     last_r = r;

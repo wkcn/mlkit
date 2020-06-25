@@ -369,7 +369,12 @@ SplitInfo BoostedTree::Impl::GetApproxSplitInfo(
       summary_t tmp_summary(buf);
       tmp_summary = quantile_t::Prune(tmp_summary, num_buckets);
       summary = quantile_t::Merge(summary, tmp_summary);
+      buf_i = 0;
     }
+  }
+  if (buf_i > 0) {
+    buf.resize(buf_i);
+    summary = quantile_t::Merge(summary, summary_t(buf));
   }
   const bool exist_missing = inds.size() < num_samples;
   size_t num_splits = summary.size();

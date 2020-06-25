@@ -15,10 +15,10 @@ PYBIND11_MODULE(boosted_tree, m) {
       .def_readwrite("objective", &BoostedTreeParam::objective)
       .def_readwrite("reg_lambda", &BoostedTreeParam::reg_lambda)
       .def_readwrite("gamma", &BoostedTreeParam::gamma)
-      .def_readwrite("n_jobs", &BoostedTreeParam::n_jobs);
-  .def_readwrite("tree_method", &BoostedTreeParam::tree_method);
-  .def_readwrite("sketch_eps", &BoostedTreeParam::sketch_eps);
-  .def_readwrite("seed", &BoostedTreeParam::seed);
+      .def_readwrite("n_jobs", &BoostedTreeParam::n_jobs)
+      .def_readwrite("tree_method", &BoostedTreeParam::tree_method)
+      .def_readwrite("sketch_eps", &BoostedTreeParam::sketch_eps)
+      .def_readwrite("seed", &BoostedTreeParam::seed);
 
   py::class_<BoostedTree>(m, "BoostedTree")
       .def(py::init<const BoostedTreeParam &>())

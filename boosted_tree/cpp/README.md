@@ -4,7 +4,7 @@ In this directory, I try to implement the algorithm of XGBoost.
 
 ## CheckList
 - [x] basic gradient boosting tree
-- [ ] weighted quantile sketch
+- [x] weighted quantile sketch
 - [x] spatity-aware algorithm
 - [ ] cache-aware block
 

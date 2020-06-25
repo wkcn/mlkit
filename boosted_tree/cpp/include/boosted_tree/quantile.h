@@ -100,11 +100,6 @@ class Quantile {
     entries_out.reserve(b + 1);
     const Entry &front = a.front();
     const Entry &back = a.back();
-    /*
-    const RType wsum = std::accumulate(a.entries.begin(), a.entries.end(),
-    RType(0), [](RType acc, const Entry &e) -> RType { return acc + e.w;
-    });
-    */
     const RType wsum = a.back().rmax;
     int i;
     for (i = 0; i <= b; ++i) {

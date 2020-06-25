@@ -1,9 +1,9 @@
+#pragma once
+
 #include <algorithm>
+#include <initializer_list>
 #include <numeric>
 #include <vector>
-
-#include <iostream>
-using namespace std;
 
 template <typename DType, typename RType>
 class Quantile {
@@ -123,41 +123,4 @@ public:
     }
     return out;
   }
-private:
-  inline DType Query(const Summary &a, RType d) {
-    const Entry &front = a.front();
-    RType _2d = RType(2) * d;
-    if (_2d < (front.rmin + front.rmax)) return front.value;
-    const Entry &back = a.back();
-    if (_2d >= (back.rmin + back.rmax)) return back.value;
-    for (int i = 0; i < a.size() - 1; ++i) {
-      if ((_2d >= (a[i].rmin + a[i].rmax)) &&
-            (_2d < (a[i+1].rmin + a[i+1].rmax))) {
-        if (_2d < a[i].rmin + a[i].w + a[i+1].rmax - a[i+1].w) return a[i].value;
-        return a[i+1].value;
-      }
-    }
-    throw "TODO FATAL";
-  } 
 };
-
-int main() {
-  Quantile<float, int> q;
-  std::vector<int> vs = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
-  using quantile_t = Quantile<float, int>;
-  using summary_t = Quantile<float, int>::Summary;
-  using entry_t = Quantile<float, int>::Entry;
-  std::vector<summary_t> summaries;
-  for (int x : vs) {
-    summaries.emplace_back(entry_t{float(x), 0, 1, 1});
-  }
-  summary_t s = summaries[0];
-  for (int i = 1; i < summaries.size(); ++i) {
-    s = quantile_t::Merge(s, summaries[i]);
-  }
-  s = quantile_t::Prune(s, 3);
-  for (auto e : s.entries) {
-    cout << e.value << ": " << e.rmin << ", " << e.rmax << endl;
-  }
-  return 0;
-}

@@ -40,6 +40,7 @@ class Quantile {
       entries.emplace_back(Entry{value, last_wsum, wsum, wsum - last_wsum});
     }
     inline size_t size() const { return entries.size(); }
+    inline bool empty() const { return entries.empty(); }
     const Entry &operator[](int i) const {
       static Entry begin{DType(0), RType(0), RType(0), RType(0)};
       static Entry end{DType(0), RType(0), RType(0), RType(0)};
@@ -54,6 +55,8 @@ class Quantile {
     inline const Entry &back() const { return entries.back(); }
   };
   static Summary Merge(const Summary &a, const Summary &b) {
+    if (a.empty()) return b;
+    if (b.empty()) return a;
     Summary out;
     auto &entries_out = out.entries;
     entries_out.reserve(a.size() + b.size());
@@ -120,7 +123,7 @@ class Quantile {
 
       // find j such that
       // _2d >= a[j].rmin + a[j].rmax and _2d < (a[j+1].rmin + a[j+1].rmax)
-      while (j < a.size() - 1 && (_2d >= a[j + 1].rmin + a[j + 1].rmax)) {
+      while (j < a.size() - 1 && (!(_2d < a[j + 1].rmin + a[j + 1].rmax))) {
         ++j;
       }
       if (j >= a.size() - 1) break;

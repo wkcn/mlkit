@@ -17,7 +17,14 @@ struct BoostedTreeParam {
   float gamma = 0;
   int n_jobs = 1;
   int seed = 39;
+  std::string tree_method = "auto";  // ["auto", "exact", "approx"]
+  float sketch_eps = 0.03;
 };
+/*
+ * the samples will be groups per TREE_METHOD_APPROX_RATIO / sketch_eps samples,
+ * and approximate into 1.0 / sketch_eps samples
+ */
+const int TREE_METHOD_APPROX_RATIO = 100;
 
 class BoostedTree {
  public:

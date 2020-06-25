@@ -1,11 +1,14 @@
 #include <boosted_tree/boosted_tree.h>
 #include <boosted_tree/logging.h>
+#include <boosted_tree/quantile.h>
 #include <omp.h>
 
 #include <cfloat>
 #include <cstdlib>
 #include <iostream>
 #include <numeric>
+#include <set>
+#include <utility>
 #include <vector>
 
 #include "./boosted_tree_impl.h"
@@ -40,6 +43,10 @@ BoostedTree::Impl::Impl(const BoostedTreeParam &param) : param_(param) {
     }
     LOG(FATAL) << msg;
   }
+  std::set<std::string> tree_methods{"auto", "exact", "approx"};
+  CHECK(tree_methods.count(param_.tree_method))
+      << "Not supported " << param_.tree_method
+      << ", tree_method should be in [\"auto\", \"exact\", \"approx\"]";
 }
 
 void BoostedTree::Impl::train(const CSRMatrix<float> &X, const Vec<float> &Y) {
@@ -152,6 +159,9 @@ int BoostedTree::Impl::CreateNode(Vec<float> &integrals,
   const float H_sum = Sum(hessians);
   float best_gain = GetGain(G_sum, H_sum) + param_.gamma * 2;
 
+  bool using_exact_hist =
+      (param_.tree_method == "exact" ||
+       num_samples <= size_t(TREE_METHOD_APPROX_RATIO / param_.sketch_eps));
   if (!gen_leaf && !feature_ids.empty()) {
     SplitInfo best_info;
     best_info.feature_id = -1;
@@ -160,8 +170,12 @@ int BoostedTree::Impl::CreateNode(Vec<float> &integrals,
 #pragma omp parallel for num_threads(param_.n_jobs)
     for (int i = 0; i < num_features; ++i) {
       int feature_id = feature_ids[i];
-      SplitInfo info = GetSplitInfo(sample_ids, feature_id, gradients, G_sum,
-                                    hessians, H_sum);
+      SplitInfo info =
+          using_exact_hist
+              ? GetExactSplitInfo(sample_ids, feature_id, gradients, G_sum,
+                                  hessians, H_sum)
+              : GetApproxSplitInfo(sample_ids, feature_id, gradients, G_sum,
+                                   hessians, H_sum);
 #pragma omp critical
       if (info.feature_id != -1) {
         new_feature_ids.push_back(info.feature_id);
@@ -226,12 +240,10 @@ float BoostedTree::Impl::GetGain(float G, float H) const {
   return gain;
 }
 
-SplitInfo BoostedTree::Impl::GetSplitInfo(const std::vector<int> &sample_ids,
-                                          int feature_id,
-                                          const Vec<float> &gradients,
-                                          const float G_sum,
-                                          const Vec<float> &hessians,
-                                          const float H_sum) {
+SplitInfo BoostedTree::Impl::GetExactSplitInfo(
+    const std::vector<int> &sample_ids, int feature_id,
+    const Vec<float> &gradients, const float G_sum, const Vec<float> &hessians,
+    const float H_sum) {
   // Basic exact greedy algorithm
   CSRRow sfeat = XT_[feature_id];
   const size_t num_samples = sample_ids.size();
@@ -287,6 +299,96 @@ SplitInfo BoostedTree::Impl::GetSplitInfo(const std::vector<int> &sample_ids,
       H_L += hessians[ind];
       ++si;
     }
+    {
+      // try enumerate missing value goto right
+      float G_R = G_sum - G_L;
+      float H_R = H_sum - H_L;
+      float gain = GetGain(G_L, H_L) + GetGain(G_R, H_R);
+      if (gain > best_gain) {
+        best_gain = gain;
+        best_split = split;
+        best_miss_left = false;
+      }
+    }
+    if (exist_missing) {
+      // try enumerate missing value goto left
+      float G_L2 = G_L + G_missing;
+      float H_L2 = H_L + H_missing;
+      float G_R2 = G_sum - G_L2;
+      float H_R2 = H_sum - H_L2;
+      float gain = GetGain(G_L2, H_L2) + GetGain(G_R2, H_R2);
+      if (gain > best_gain) {
+        best_gain = gain;
+        best_split = split;
+        best_miss_left = true;
+      }
+    }
+  }
+  SplitInfo info;
+  info.feature_id = feature_id;
+  info.split = best_split;
+  info.gain = best_gain;
+  info.miss_left = best_miss_left;
+  return info;
+}
+
+SplitInfo BoostedTree::Impl::GetApproxSplitInfo(
+    const std::vector<int> &sample_ids, int feature_id,
+    const Vec<float> &gradients, const float G_sum, const Vec<float> &hessians,
+    const float H_sum) {
+  // Weighted quantile sketch
+  CSRRow sfeat = XT_[feature_id];
+  const size_t num_samples = sample_ids.size();
+  Vec<float> feat = sfeat.at(sample_ids.begin(), sample_ids.end());
+  std::vector<int> inds(num_samples);
+  float G_missing = 0, H_missing = 0;
+  int j = 0;
+  // remove nan in inds
+  for (int i = 0; i < num_samples; ++i) {
+    if (std::isnan(feat[i])) {
+      G_missing += gradients[i];
+      H_missing += hessians[i];
+    } else {
+      inds[j++] = i;
+    }
+  }
+  inds.resize(j);
+  using pair_t = std::pair<float, GradientInfo>;
+  using quantile_t = Quantile<float, GradientInfo>;
+  using summary_t = quantile_t::Summary;
+  const size_t buffer_size = TREE_METHOD_APPROX_RATIO / param_.sketch_eps;
+  const size_t num_buckets = 1.0 / param_.sketch_eps;
+  std::vector<pair_t> buf(buffer_size);
+  int buf_i = 0;
+  summary_t summary;
+  for (int ind : inds) {
+    buf[buf_i++] =
+        pair_t{feat[ind], GradientInfo(gradients[ind], hessians[ind])};
+    if (buf_i >= buffer_size) {
+      // merge then prune
+      summary_t tmp_summary(buf);
+      tmp_summary = quantile_t::Prune(tmp_summary, num_buckets);
+      summary = quantile_t::Merge(summary, tmp_summary);
+    }
+  }
+  const bool exist_missing = inds.size() < num_samples;
+  size_t num_splits = summary.size();
+  if (num_splits == 0) {
+    SplitInfo info;
+    info.feature_id = -1;
+    return info;
+  }
+  DCHECK_GT(num_splits, 0);
+  float best_gain = FLT_MIN;
+  float best_split;
+  bool best_miss_left;
+  for (int i = 0; i < summary.size(); ++i) {
+    const auto &entry = summary[i];
+    // update split, G_L and H_L
+    float split = entry.value;
+    const GradientInfo &ginfo = entry.rmin;
+    float G_L = ginfo.gradient;
+    float H_L = ginfo.hessian;
     {
       // try enumerate missing value goto right
       float G_R = G_sum - G_L;

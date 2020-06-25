@@ -38,6 +38,24 @@ struct SplitInfo {
   bool miss_left;
 };
 
+struct GradientInfo {
+  float gradient, hessian;
+  GradientInfo() : gradient(0), hessian(0){};
+  GradientInfo(float value) : gradient(value), hessian(value){};
+  GradientInfo(float g, float h) : gradient(g), hessian(h){};
+  GradientInfo &operator+=(const GradientInfo &b) {
+    gradient += b.gradient;
+    hessian += b.hessian;
+    return *this;
+  }
+  GradientInfo operator+(const GradientInfo &b) const {
+    GradientInfo info(gradient + b.gradient, hessian + b.hessian);
+    return info;
+  }
+  bool operator<(const GradientInfo &b) const { return hessian < b.hessian; }
+  operator float() const { return hessian; }
+};
+
 class BoostedTree::Impl {
  public:
   Impl(const BoostedTreeParam &);
@@ -51,9 +69,15 @@ class BoostedTree::Impl {
   int CreateNode(Vec<float> &integrals, const std::vector<int> &sample_ids,
                  const std::vector<int> &feature_ids, const int depth);
   inline float GetGain(float G, float H) const;
-  SplitInfo GetSplitInfo(const std::vector<int> &sample_ids, int feature_id,
-                         const Vec<float> &gradients, const float G_sum,
-                         const Vec<float> &hessians, const float H_sum);
+  SplitInfo GetExactSplitInfo(const std::vector<int> &sample_ids,
+                              int feature_id, const Vec<float> &gradients,
+                              const float G_sum, const Vec<float> &hessians,
+                              const float H_sum);
+
+  SplitInfo GetApproxSplitInfo(const std::vector<int> &sample_ids,
+                               int feature_id, const Vec<float> &gradients,
+                               const float G_sum, const Vec<float> &hessians,
+                               const float H_sum);
 
  private:
   BoostedTreeParam param_;

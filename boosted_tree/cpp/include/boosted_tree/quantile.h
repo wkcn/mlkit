@@ -94,7 +94,7 @@ public:
       const float _2d = float(2) * d;
       if (_2d < (front.rmin + front.rmax)) {
         // x1
-        entries_out.emplace_back(Entry{front.value, front.rmin, front.rmax, front.w});
+        AppendEntry(entries_out, front);
       } else break;
     }
     int j = 0;
@@ -111,16 +111,30 @@ public:
 
       if (_2d < a[j].RMinNext() + a[j+1].RMaxPrev()) {
         const Entry &e = a[j];
-        entries_out.emplace_back(Entry{e.value, e.rmin, e.rmax, e.w});
+        AppendEntry(entries_out, e);
       } else {
         const Entry &e = a[j + 1];
-        entries_out.emplace_back(Entry{e.value, e.rmin, e.rmax, e.w});
+        AppendEntry(entries_out, e);
       }
     }
     for (; i <= b; ++i) {
       // x_k
-      entries_out.emplace_back(Entry{back.value, back.rmin, back.rmax, back.w});
+      AppendEntry(entries_out, back);
     }
     return out;
+  }
+  static void AppendEntry(std::vector<Entry> &entries_out, const Entry &entry) {
+    if (entries_out.empty()) {
+      entries_out.push_back(entry);
+    } else {
+      Entry &last = entries_out.back();
+      if (last.value != entry.value) {
+        entries_out.push_back(entry);
+      } else {
+        last.rmin += entry.rmin;
+        last.rmax += entry.rmax;
+        last.w += entry.w;
+      }
+    }
   }
 };

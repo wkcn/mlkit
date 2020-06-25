@@ -5,6 +5,9 @@
 #include <numeric>
 #include <vector>
 
+#include <iostream>
+using namespace std;
+
 template <typename DType, typename RType>
 class Quantile {
 public:
@@ -52,17 +55,17 @@ public:
       const auto &ea = a[ai];
       const auto &eb = b[bi];
       if (ea.value == eb.value) {
-        entries_out.emplace_back(Entry{ea.value, ea.rmin + eb.rmin,
+        AppendEntry(entries_out, Entry{ea.value, ea.rmin + eb.rmin,
             ea.rmax + eb.rmax, ea.w + eb.w});
         ++ai; ++bi;
       } else if (ea.value < eb.value) {
         // entries_b[bi - 1] < ea.value < entries_b[bi].value
-        entries_out.emplace_back(Entry{ea.value, ea.rmin + b[bi-1].RMinNext(),
+        AppendEntry(entries_out, Entry{ea.value, ea.rmin + b[bi-1].RMinNext(),
             ea.rmax + eb.RMaxPrev(), ea.w});
         ++ai;
       } else {
         // ea.value > eb.value
-        entries_out.emplace_back(Entry{eb.value, eb.rmin + a[ai-1].RMinNext(),
+        AppendEntry(entries_out, Entry{eb.value, eb.rmin + a[ai-1].RMinNext(),
             eb.rmax + ea.RMaxPrev(), eb.w});
         ++bi;
       }
@@ -70,12 +73,12 @@ public:
     while (ai < a.size()) {
       const auto &ea = a[ai++];
       RType r = b.entries.back().rmax;
-      entries_out.emplace_back(Entry{ea.value, ea.rmin + r, ea.rmax + r, ea.w});
+      AppendEntry(entries_out, Entry{ea.value, ea.rmin + r, ea.rmax + r, ea.w});
     }
     while (bi < b.size()) {
       const auto &eb = b[bi++];
       RType r = a.entries.back().rmax;
-      entries_out.emplace_back(Entry{eb.value, eb.rmin + r, eb.rmax + r, eb.w});
+      AppendEntry(entries_out, Entry{eb.value, eb.rmin + r, eb.rmax + r, eb.w});
     }
     return out;
   }

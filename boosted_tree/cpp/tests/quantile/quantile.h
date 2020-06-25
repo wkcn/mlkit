@@ -93,15 +93,10 @@ void CHECK_PRUNE(const summary_t &summary, const int b,
   CHECK_GE(j, summary.size());
 }
 
-TEST(Quantile, TestQuantile) {
+TEST(Quantile, TestQuantileMergeOne) {
   const int N = 200;
   const int M = 100;
   std::vector<pair_t> data;
-  /*
-  for (int i = 0; i < N; ++i) {
-    data.push_back({i, (i + 1) * (i + 1)});
-  }
-  */
   for (int i = 0; i < N; ++i) {
     data.push_back({rand() % 20, rand() % 50});
   }
@@ -110,6 +105,19 @@ TEST(Quantile, TestQuantile) {
     summary_t b(entry_t{data[i].first, 0, data[i].second, data[i].second});
     s = quantile_t::Merge(s, b);
   }
+  CHECK_MERGE(s, data);
+  s = quantile_t::Prune(s, M);
+  CHECK_PRUNE(s, M, data);
+}
+
+TEST(Quantile, TestQuantileMergeVector) {
+  const int N = 200;
+  const int M = 100;
+  std::vector<pair_t> data;
+  for (int i = 0; i < N; ++i) {
+    data.push_back({rand() % 20, rand() % 50});
+  }
+  summary_t s(data);
   CHECK_MERGE(s, data);
   s = quantile_t::Prune(s, M);
   CHECK_PRUNE(s, M, data);

@@ -32,7 +32,7 @@ class Quantile {
           wsum += data[i].second;
         } else {
           entries.emplace_back(Entry{value, last_wsum, wsum, wsum - last_wsum});
-          value = data[i].first();
+          value = data[i].first;
           last_wsum = wsum;
           wsum += data[i].second;
         }

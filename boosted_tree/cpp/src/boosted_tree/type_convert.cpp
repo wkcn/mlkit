@@ -19,4 +19,3 @@ template <>
 std::string stonum(const std::string &s) {
   return s;
 }
-

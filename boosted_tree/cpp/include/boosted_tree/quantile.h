@@ -6,28 +6,21 @@
 #include <utility>
 #include <vector>
 
-#include <iostream>
-using namespace std;
-
 template <typename DType, typename RType>
 class Quantile {
-public:
+ public:
   struct Entry {
     DType value;  // x
     RType rmin, rmax;
     RType w;
-    inline RType RMinNext() const {
-      return rmin + w;
-    }
-    inline RType RMaxPrev() const {
-      return rmax - w;
-    } 
+    inline RType RMinNext() const { return rmin + w; }
+    inline RType RMaxPrev() const { return rmax - w; }
   };
   struct Summary {
-    std::vector<Entry> entries; // ordered value, no duplicated values
+    std::vector<Entry> entries;  // ordered value, no duplicated values
     Summary() {}
-    Summary(const Entry& entry) : entries{entry} {};
-    Summary(std::vector<std::pair<DType, RType> > &data) {
+    Summary(const Entry &entry) : entries{entry} {};
+    Summary(std::vector<std::pair<DType, RType>> &data) {
       if (data.empty()) return;
       std::sort(data.begin(), data.end());
       DType value = data[0].first;
@@ -46,12 +39,10 @@ public:
       }
       entries.emplace_back(Entry{value, last_wsum, wsum, wsum - last_wsum});
     }
-    inline size_t size() const {
-      return entries.size();
-    }
-    const Entry& operator[](int i) const {
-      static Entry begin{0, 0, 0, 0};
-      static Entry end{0, 0, 0, 0};
+    inline size_t size() const { return entries.size(); }
+    const Entry &operator[](int i) const {
+      static Entry begin{DType(0), RType(0), RType(0), RType(0)};
+      static Entry end{DType(0), RType(0), RType(0), RType(0)};
       if (i < 0) return begin;
       if (i >= size()) {
         end.rmin = end.rmax = entries.back().rmax;
@@ -59,12 +50,8 @@ public:
       }
       return entries[i];
     }
-    inline const Entry& front() const {
-      return entries.front();
-    }
-    inline const Entry& back() const {
-      return entries.back();
-    }
+    inline const Entry &front() const { return entries.front(); }
+    inline const Entry &back() const { return entries.back(); }
   };
   static Summary Merge(const Summary &a, const Summary &b) {
     Summary out;
@@ -75,78 +62,89 @@ public:
       const auto &ea = a[ai];
       const auto &eb = b[bi];
       if (ea.value == eb.value) {
-        AppendEntry(entries_out, Entry{ea.value, ea.rmin + eb.rmin,
-            ea.rmax + eb.rmax, ea.w + eb.w});
-        ++ai; ++bi;
+        AccumulateEntry(entries_out, Entry{ea.value, ea.rmin + eb.rmin,
+                                           ea.rmax + eb.rmax, ea.w + eb.w});
+        ++ai;
+        ++bi;
       } else if (ea.value < eb.value) {
         // entries_b[bi - 1] < ea.value < entries_b[bi].value
-        AppendEntry(entries_out, Entry{ea.value, ea.rmin + b[bi-1].RMinNext(),
-            ea.rmax + eb.RMaxPrev(), ea.w});
+        AccumulateEntry(entries_out,
+                        Entry{ea.value, ea.rmin + b[bi - 1].RMinNext(),
+                              ea.rmax + eb.RMaxPrev(), ea.w});
         ++ai;
       } else {
         // ea.value > eb.value
-        AppendEntry(entries_out, Entry{eb.value, eb.rmin + a[ai-1].RMinNext(),
-            eb.rmax + ea.RMaxPrev(), eb.w});
+        AccumulateEntry(entries_out,
+                        Entry{eb.value, eb.rmin + a[ai - 1].RMinNext(),
+                              eb.rmax + ea.RMaxPrev(), eb.w});
         ++bi;
       }
     }
     while (ai < a.size()) {
       const auto &ea = a[ai++];
       RType r = b.entries.back().rmax;
-      AppendEntry(entries_out, Entry{ea.value, ea.rmin + r, ea.rmax + r, ea.w});
+      AccumulateEntry(entries_out,
+                      Entry{ea.value, ea.rmin + r, ea.rmax + r, ea.w});
     }
     while (bi < b.size()) {
       const auto &eb = b[bi++];
       RType r = a.entries.back().rmax;
-      AppendEntry(entries_out, Entry{eb.value, eb.rmin + r, eb.rmax + r, eb.w});
+      AccumulateEntry(entries_out,
+                      Entry{eb.value, eb.rmin + r, eb.rmax + r, eb.w});
     }
     return out;
   }
-  static Summary Prune(const Summary &a, int b) {
+  static Summary Prune(const Summary &a, const int b) {
     Summary out;
     auto &entries_out = out.entries;
     entries_out.reserve(b + 1);
     const Entry &front = a.front();
     const Entry &back = a.back();
-    RType wsum = std::accumulate(a.entries.begin(), a.entries.end(), RType(0), [](RType acc, const Entry &e) -> RType {
-        return acc + e.w;
+    /*
+    const RType wsum = std::accumulate(a.entries.begin(), a.entries.end(),
+    RType(0), [](RType acc, const Entry &e) -> RType { return acc + e.w;
     });
+    */
+    const RType wsum = a.back().rmax;
     int i;
     for (i = 0; i <= b; ++i) {
       const float d = float(i) * wsum / b;
       const float _2d = float(2) * d;
+      // _2d may be duplicated
       if (_2d < (front.rmin + front.rmax)) {
         // x1
-        AppendEntry(entries_out, front);
-      } else break;
+        AppendUniqueEntry(entries_out, front);
+      } else
+        break;
     }
+    // _2d >= (front.rmin + front.rmax)
     int j = 0;
     for (; i <= b; ++i) {
       const float d = float(i) * wsum / b;
       const float _2d = float(2) * d;
-      const Entry &e = a[i];
 
-      while (j < a.size() - 1 && ((_2d < a[j].rmin + a[j].rmax) ||
-            (_2d >= a[j+1].rmin + a[j+1].rmax))) {
+      // find j such that
+      // _2d >= a[j].rmin + a[j].rmax and _2d < (a[j+1].rmin + a[j+1].rmax)
+      while (j < a.size() - 1 && (_2d >= a[j + 1].rmin + a[j + 1].rmax)) {
         ++j;
       }
       if (j >= a.size() - 1) break;
 
-      if (_2d < a[j].RMinNext() + a[j+1].RMaxPrev()) {
-        const Entry &e = a[j];
-        AppendEntry(entries_out, e);
+      if (_2d < a[j].RMinNext() + a[j + 1].RMaxPrev()) {
+        AppendUniqueEntry(entries_out, a[j]);
       } else {
-        const Entry &e = a[j + 1];
-        AppendEntry(entries_out, e);
+        AppendUniqueEntry(entries_out, a[j + 1]);
       }
     }
+    // _2d >= back.rmin + back.rmax
     for (; i <= b; ++i) {
       // x_k
-      AppendEntry(entries_out, back);
+      AppendUniqueEntry(entries_out, back);
     }
     return out;
   }
-  static void AppendEntry(std::vector<Entry> &entries_out, const Entry &entry) {
+  static void AccumulateEntry(std::vector<Entry> &entries_out,
+                              const Entry &entry) {
     if (entries_out.empty()) {
       entries_out.push_back(entry);
     } else {
@@ -157,6 +155,16 @@ public:
         last.rmin += entry.rmin;
         last.rmax += entry.rmax;
         last.w += entry.w;
+      }
+    }
+  }
+  static void AppendUniqueEntry(std::vector<Entry> &entries_out,
+                                const Entry &entry) {
+    if (entries_out.empty()) {
+      entries_out.push_back(entry);
+    } else {
+      if (entries_out.back().value != entry.value) {
+        entries_out.push_back(entry);
       }
     }
   }

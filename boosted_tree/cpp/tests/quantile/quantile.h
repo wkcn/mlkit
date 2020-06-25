@@ -80,27 +80,31 @@ void CHECK_PRUNE(const summary_t &summary, const int b,
     last_r = r;
   }
   float tolerate = float(1) / b;
-  for (int i = 0; i < summary.size(); ++i) {
+  int j = 0;
+  for (int i = 0; i <= b && j < summary.size(); ++i) {
     float d = float(i) * wsum / b;
-    auto &e = summary[i];
-    ASSERT_GE(d, e.RMaxPrev() - tolerate / 2 * wsum);
-    ASSERT_LE(d, e.RMinNext() + tolerate / 2 * wsum);
+    auto &e = summary[j];
+    // since there is some duplicated value which is skipped
+    if ((d >= e.RMaxPrev() - tolerate / 2 * wsum) &&
+        (d <= e.RMinNext() + tolerate / 2 * wsum)) {
+      ++j;
+    }
   }
+  CHECK_GE(j, summary.size());
 }
 
 TEST(Quantile, TestQuantile) {
-  const int N = 20;
-  const int M = 10;
-  // std::vector<pair_t> data;
+  const int N = 200;
+  const int M = 100;
   std::vector<pair_t> data;
+  /*
   for (int i = 0; i < N; ++i) {
     data.push_back({i, (i + 1) * (i + 1)});
   }
-  /*
-  for (int i = 0; i < N; ++i) {
-    data.push_back({rand() % 20, rand() % 500});
-  }
   */
+  for (int i = 0; i < N; ++i) {
+    data.push_back({rand() % 20, rand() % 50});
+  }
   summary_t s(entry_t{data[0].first, 0, data[0].second, data[0].second});
   for (int i = 1; i < N; ++i) {
     summary_t b(entry_t{data[i].first, 0, data[i].second, data[i].second});

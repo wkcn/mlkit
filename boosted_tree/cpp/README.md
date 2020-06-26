@@ -3,10 +3,20 @@
 In this directory, I try to implement the algorithm of XGBoost.
 
 ## CheckList
-- [x] basic gradient boosting tree
+
+- [x] regularized learning objective
+- [x] gradient tree boosting
+- [ ] shrinkage
+- [ ] column subsampling
+- [x] basic exact greedy algorithm
+- [x] approximate local
+- [ ] approximate global
 - [x] weighted quantile sketch
 - [x] spatity-aware algorithm
+- [x] column block
 - [x] cache-aware acess
+- [ ] blocks for out-of-core computation
+- [ ] distributed computing
 
 ## Reference
 

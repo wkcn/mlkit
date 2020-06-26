@@ -80,6 +80,10 @@ class BoostedTree::Impl {
                                const float H_sum);
 
  private:
+  template <typename DType, typename IType>
+  Vec<DType> ReorderVec(const Vec<DType> &data, const std::vector<IType> &inds);
+
+ private:
   BoostedTreeParam param_;
   std::vector<int> trees;
   Objective<float> *objective;

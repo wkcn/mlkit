@@ -240,6 +240,18 @@ float BoostedTree::Impl::GetGain(float G, float H) const {
   return gain;
 }
 
+template <typename DType, typename IType>
+Vec<DType> BoostedTree::Impl::ReorderVec(const Vec<DType> &data,
+                                         const std::vector<IType> &inds) {
+  const size_t size = inds.size();
+  if (size == 0) return {};
+  Vec<DType> out(size);
+  for (int i = 0; i < (int)size; ++i) {
+    out[i] = data[inds[i]];
+  }
+  return out;
+}
+
 SplitInfo BoostedTree::Impl::GetExactSplitInfo(
     const std::vector<int> &sample_ids, int feature_id,
     const Vec<float> &gradients, const float G_sum, const Vec<float> &hessians,
@@ -292,11 +304,15 @@ SplitInfo BoostedTree::Impl::GetExactSplitInfo(
   float best_gain = FLT_MIN;
   float best_split;
   bool best_miss_left;
+
+  Vec<float> feat_cache = ReorderVec(feat, inds);
+  Vec<float> gradients_cache = ReorderVec(gradients, inds);
+  Vec<float> hessians_cache = ReorderVec(hessians, inds);
+
   for (float split : splits) {
-    while (si < num_nonmiss_samples && feat[inds[si]] < split) {
-      int ind = inds[si];
-      G_L += gradients[ind];
-      H_L += hessians[ind];
+    while (si < num_nonmiss_samples && feat_cache[si] < split) {
+      G_L += gradients_cache[si];
+      H_L += hessians_cache[si];
       ++si;
     }
     {

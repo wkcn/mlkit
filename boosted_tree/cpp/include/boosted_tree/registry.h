@@ -1,9 +1,9 @@
 #pragma once
 // Reference:
 // https://github.com/dmlc/dmlc-core/blob/master/include/dmlc/registry.h
-#include <unordered_map>
 #include <memory>
 #include <mutex>
+#include <unordered_map>
 #include <vector>
 
 template <typename Entry>

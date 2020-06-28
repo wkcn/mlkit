@@ -18,7 +18,8 @@ PYBIND11_MODULE(boosted_tree, m) {
       .def_readwrite("n_jobs", &BoostedTreeParam::n_jobs)
       .def_readwrite("tree_method", &BoostedTreeParam::tree_method)
       .def_readwrite("sketch_eps", &BoostedTreeParam::sketch_eps)
-      .def_readwrite("seed", &BoostedTreeParam::seed);
+      .def_readwrite("seed", &BoostedTreeParam::seed)
+      .def_readwrite("subsample", &BoostedTreeParam::subsample);
 
   py::class_<BoostedTree>(m, "BoostedTree")
       .def(py::init<const BoostedTreeParam &>())

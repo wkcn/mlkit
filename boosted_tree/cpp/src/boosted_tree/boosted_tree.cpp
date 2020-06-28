@@ -47,6 +47,8 @@ BoostedTree::Impl::Impl(const BoostedTreeParam &param) : param_(param) {
   CHECK(tree_methods.count(param_.tree_method))
       << "Not supported " << param_.tree_method
       << ", tree_method should be in [\"auto\", \"exact\", \"approx\"]";
+  CHECK(param_.subsample >= 0 && param_.subsample <= 1)
+      << "subsample should be in [0, 1]";
 }
 
 void BoostedTree::Impl::train(const CSRMatrix<float> &X, const Vec<float> &Y) {
@@ -131,28 +133,37 @@ int BoostedTree::Impl::CreateNode(Vec<float> &integrals,
   Node &node = *nodes_[nid];
 
   const size_t num_samples = sample_ids.size();
-  Vec<float> part_integrals(num_samples);
-  for (int i = 0; i < num_samples; ++i) {
-    part_integrals[i] = integrals[sample_ids[i]];
+  const size_t num_subsamples =
+      std::max(static_cast<size_t>(1),
+               static_cast<size_t>(num_samples * param_.subsample));
+  std::vector<int> subsample_ids = sample_ids;
+  if (param_.subsample < 1) {
+    std::random_shuffle(subsample_ids.begin(), subsample_ids.end());
+    subsample_ids.resize(num_subsamples);
   }
-  Vec<float> part_labels(num_samples);
-  for (int i = 0; i < num_samples; ++i) {
-    part_labels[i] = Y_[sample_ids[i]];
+
+  Vec<float> part_integrals(num_subsamples);
+  for (int i = 0; i < num_subsamples; ++i) {
+    part_integrals[i] = integrals[subsample_ids[i]];
+  }
+  Vec<float> part_labels(num_subsamples);
+  for (int i = 0; i < num_subsamples; ++i) {
+    part_labels[i] = Y_[subsample_ids[i]];
   }
 
   bool gen_leaf = true;
-  if (param_.max_depth == -1 || depth <= param_.max_depth) {
-    if (sample_ids.size() > 1) {
+  if (param_.max_depth <= 0 || depth <= param_.max_depth) {
+    if (num_subsamples > 1) {
       // TODO: 如何在回归问题中中止
       gen_leaf = false;
     }
   }
   // compute gradient and hessian
-  Vec<float> gradients(num_samples), hessians(num_samples);
-  for (int i = 0; i < num_samples; ++i) {
+  Vec<float> gradients(num_subsamples), hessians(num_subsamples);
+  for (int i = 0; i < num_subsamples; ++i) {
     gradients[i] = objective->gradient(part_integrals[i], part_labels[i]);
   }
-  for (int i = 0; i < num_samples; ++i) {
+  for (int i = 0; i < num_subsamples; ++i) {
     hessians[i] = objective->hessian(part_integrals[i], part_labels[i]);
   }
   const float G_sum = Sum(gradients);
@@ -161,7 +172,7 @@ int BoostedTree::Impl::CreateNode(Vec<float> &integrals,
 
   bool using_exact_hist =
       (param_.tree_method == "exact" ||
-       num_samples <= size_t(TREE_METHOD_APPROX_RATIO / param_.sketch_eps));
+       num_subsamples <= size_t(TREE_METHOD_APPROX_RATIO / param_.sketch_eps));
   if (!gen_leaf && !feature_ids.empty()) {
     SplitInfo best_info;
     best_info.feature_id = -1;
@@ -172,9 +183,9 @@ int BoostedTree::Impl::CreateNode(Vec<float> &integrals,
       int feature_id = feature_ids[i];
       SplitInfo info =
           using_exact_hist
-              ? GetExactSplitInfo(sample_ids, feature_id, gradients, G_sum,
+              ? GetExactSplitInfo(subsample_ids, feature_id, gradients, G_sum,
                                   hessians, H_sum)
-              : GetApproxSplitInfo(sample_ids, feature_id, gradients, G_sum,
+              : GetApproxSplitInfo(subsample_ids, feature_id, gradients, G_sum,
                                    hessians, H_sum);
 #pragma omp critical
       if (info.feature_id != -1) {

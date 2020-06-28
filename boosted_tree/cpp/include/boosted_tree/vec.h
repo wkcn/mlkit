@@ -4,6 +4,7 @@
 #include <cassert>
 #include <initializer_list>
 #include <iostream>
+#include <valarray>
 #include <vector>
 
 #define DEF_VEC_OP_SCALAR_FUNC(op)  \
@@ -26,13 +27,21 @@
   }
 
 template <typename T>
-class Vec : public std::vector<T> {
+class Vec : public std::valarray<T> {
  public:
-  Vec() : std::vector<T>() {}
-  Vec(size_t n) : std::vector<T>(n) {}
-  Vec(std::initializer_list<T> il) : std::vector<T>(il) {}
+  Vec() : std::valarray<T>() {}
+  Vec(size_t n) : std::valarray<T>(n) {}
+  Vec(std::initializer_list<T> il) : std::valarray<T>(il) {}
   template <class InputIterator>
-  Vec(InputIterator first, InputIterator last) : std::vector<T>(first, last) {}
+  Vec(InputIterator first, InputIterator last) {
+    const size_t n = std::distance(first, last);
+    this->resize(n);
+    int i = 0;
+    for (auto p = first; p != last; ++p, ++i) {
+      (*this)[i] = *p;
+    }
+  }
+  Vec(const std::vector<T> &data) : Vec<T>(std::begin(data), std::end(data)) {}
 
  public:
   // scalar
@@ -47,11 +56,31 @@ class Vec : public std::vector<T> {
   DEF_VEC_OP_VEC_FUNC(/=)
 };
 
+template <typename T, typename VT>
+bool operator==(const Vec<T> &a, const VT &b) {
+  auto pa = std::begin(a);
+  auto pb = std::begin(b);
+  auto end_a = std::end(a);
+  auto end_b = std::end(b);
+  for (; pa != end_a && pb != end_b; ++pa, ++pb) {
+    if (*pa != *pb) return false;
+    ++pa;
+    ++pb;
+  }
+  return pa == end_a && pb == end_b;
+}
+
 #define DEF_VEC_OP_SCALAR_BINARY_FUNC(op, aop)      \
   template <typename T>                             \
   Vec<T> operator op(const Vec<T> &a, const T &b) { \
     Vec<T> c = a;                                   \
     c aop b;                                        \
+    return c;                                       \
+  }                                                 \
+  template <typename T>                             \
+  Vec<T> operator op(const T &a, const Vec<T> &b) { \
+    Vec<T> c = b;                                   \
+    c aop a;                                        \
     return c;                                       \
   }
 

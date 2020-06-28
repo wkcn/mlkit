@@ -64,7 +64,8 @@ void BoostedTree::Impl::train(const CSRMatrix<float> &X, const Vec<float> &Y) {
   std::iota(sample_ids.begin(), sample_ids.end(), 0);
   std::vector<int> feature_ids(num_features);
   std::iota(feature_ids.begin(), feature_ids.end(), 0);
-  Vec<float> integrals(num_samples, 0);
+  Vec<float> integrals(num_samples);
+  integrals = 0;
   for (int iter = 1; iter <= param_.n_estimators; ++iter) {
     int root = CreateNode(integrals, sample_ids, feature_ids, 1);
     trees.push_back(root);

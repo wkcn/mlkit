@@ -20,7 +20,7 @@ float ComputeAccuracy(const Vec<float> &a, const Vec<float> &b) {
 float ComputeRMSE(const Vec<float> &a, const Vec<float> &b) {
   if (a.size() != b.size()) return 0;
   Vec<float> tmp = a - b;
-  std::for_each(tmp.begin(), tmp.end(), [](float &x) { x *= x; });
+  tmp.apply([](float x) -> float { return x * x; });
   return sqrt(Mean(tmp));
 }
 

@@ -45,9 +45,7 @@ class SquareLoss : public Objective<T> {
     return 2;
   }
   inline T predict(T x) { return x; }
-  inline T estimate(const Vec<T> &Y) {
-    return std::accumulate(Y.begin(), Y.end(), T(0)) / Y.size();
-  }
+  inline T estimate(const Vec<T> &Y) { return (T)Y.sum() / Y.size(); }
 };
 
 template <typename T>
@@ -68,8 +66,7 @@ class LogisticLoss : public Objective<T> {
   inline T predict(T x) { return T(1) / (T(1) + exp(-x)); }
   inline T estimate(const Vec<T> &Y) {
     const T eps = 1e-16;
-    T mean =
-        std::max(std::accumulate(Y.begin(), Y.end(), T(0)) / Y.size(), eps);
+    T mean = std::max((T)Y.sum() / Y.size(), eps);
     return -log(std::max(T(1) / mean - T(1), eps));
   }
 };

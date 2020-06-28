@@ -6,6 +6,7 @@
 #include <sstream>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "./csr_matrix.h"
 #include "./logging.h"
@@ -21,7 +22,7 @@ std::pair<CSRMatrix<TX>, Vec<TY>> ReadLibSVMFile(const std::string &filename) {
   }
   std::string buf;
 
-  Vec<TY> labels;
+  std::vector<TY> labels;
   std::vector<dim_t> row;
   std::vector<dim_t> col;
   std::vector<TX> data;

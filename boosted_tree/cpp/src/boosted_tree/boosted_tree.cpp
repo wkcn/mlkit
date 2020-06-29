@@ -119,7 +119,7 @@ std::string BoostedTree::Impl::str() const {
   const size_t num_trees = trees.size();
   std::stringstream ss;
   for (int t = 0; t < num_trees; ++t) {
-    ss << "Tree " << t << ":\n";
+    ss << "Tree " << t + 1 << ":\n";
     std::function<void(const int, const int)> F;
     F = [&](const int nid, const int height) {
       const Node &node = *nodes_[nid];

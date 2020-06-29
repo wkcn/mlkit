@@ -30,7 +30,6 @@ template <typename T>
 class Vec : public std::valarray<T> {
  public:
   using std::valarray<T>::valarray;
-  using std::valarray<T>::operator=;
   template <class InputIterator>
   Vec(InputIterator first, InputIterator last) {
     const size_t n = std::distance(first, last);
@@ -41,6 +40,7 @@ class Vec : public std::valarray<T> {
     }
   }
   Vec(const std::vector<T> &data) : Vec<T>(std::begin(data), std::end(data)) {}
+  using std::valarray<T>::operator=;
   T *data() { return &((*this)[0]); }
   const T *data() const { return &((*this)[0]); }
   std::vector<T> tovector() {

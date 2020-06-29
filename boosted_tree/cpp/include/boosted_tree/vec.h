@@ -29,9 +29,8 @@
 template <typename T>
 class Vec : public std::valarray<T> {
  public:
-  Vec() : std::valarray<T>() {}
-  Vec(size_t n) : std::valarray<T>(n) {}
-  Vec(std::initializer_list<T> il) : std::valarray<T>(il) {}
+  using std::valarray<T>::valarray;
+  using std::valarray<T>::operator=;
   template <class InputIterator>
   Vec(InputIterator first, InputIterator last) {
     const size_t n = std::distance(first, last);
@@ -42,13 +41,11 @@ class Vec : public std::valarray<T> {
     }
   }
   Vec(const std::vector<T> &data) : Vec<T>(std::begin(data), std::end(data)) {}
-  Vec(Vec &) = default;
-  Vec(const Vec &) = default;
-  Vec(Vec &&) = default;
-  Vec& operator=(const Vec &) = default;
-  Vec& operator=(Vec &&) = default;
-  T* data() {return &((*this)[0]);}
-  const T* data() const {return &((*this)[0]);}
+  T *data() { return &((*this)[0]); }
+  const T *data() const { return &((*this)[0]); }
+  std::vector<T> tovector() {
+    return std::vector<T>(std::begin(*this), std::end(*this));
+  }
 
  public:
   // scalar
@@ -65,7 +62,7 @@ class Vec : public std::valarray<T> {
 
 #include "logging.h"
 template <typename T, typename VT>
-bool operator==(const Vec<T> &a, const VT &b) {
+bool Equal(const Vec<T> &a, const VT &b) {
   auto pa = std::begin(a);
   auto pb = std::begin(b);
   const auto end_a = std::end(a);

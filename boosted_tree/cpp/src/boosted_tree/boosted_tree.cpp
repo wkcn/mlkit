@@ -28,9 +28,7 @@ Vec<float> BoostedTree::predict(const CSRMatrix<float> &X) const {
   return pImpl->predict(X);
 }
 
-std::string BoostedTree::str() const {
-  return pImpl->str();
-}
+std::string BoostedTree::str() const { return pImpl->str(); }
 
 BoostedTree::Impl::Impl(const BoostedTreeParam &param) : param_(param) {
   objective = Registry<Objective<float>>::Find(param_.objective);
@@ -129,12 +127,12 @@ std::string BoostedTree::Impl::str() const {
       if (node.is_leaf) {
         ss << space << "predict: " << node.value << '\n';
       } else {
-        ss << space << "f" << node.feature_id << "<" << node.value;
-        if (node.miss_left) ss << "or missing";
+        ss << space << "f" << node.feature_id << " < " << node.value;
+        if (node.miss_left) ss << " or missing";
         ss << '\n';
         F(node.left, height + 1);
-        ss << space << "f" << node.feature_id << ">=" << node.value;
-        if (!node.miss_left) ss << "or missing";
+        ss << space << "f" << node.feature_id << " >= " << node.value;
+        if (!node.miss_left) ss << " or missing";
         ss << '\n';
         F(node.right, height + 1);
       }

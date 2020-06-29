@@ -20,6 +20,7 @@ def evaluate(preds, labels, prefix):
     rmse = compute_rmse(preds, labels)
     print(f"{prefix} RMSE: {rmse}")
 
+
 train_fname = './data/agaricus.txt.train'
 test_fname = './data/agaricus.txt.test'
 
@@ -27,7 +28,8 @@ test_fname = './data/agaricus.txt.test'
 dtrain = lgb.Dataset(train_fname, free_raw_data=True)
 dtest = lgb.Dataset(test_fname, free_raw_data=True)
 
-param = {'max_depth': 2, 'learning_rate': 1, 'objective': 'binary', 'metric': ['binary_logloss', 'binary_error', 'rmse']}
+param = {'max_depth': 2, 'learning_rate': 1, 'objective': 'binary',
+         'metric': ['binary_logloss', 'binary_error', 'rmse']}
 num_round = 2
 bst = lgb.train(param, dtrain, num_round, valid_sets=[dtest])
 

@@ -265,6 +265,8 @@ Vec<T> CSRRow<T>::at(Iterator first, Iterator last) const {
     dim_t t = inds[i];
     dim_t col = cols[t];
     p = lower_bound(p, rindices_end, col);
+    DCHECK_GE(t, 0);
+    DCHECK_LT(t, n);
     out[t] = (p != rindices_end && *p == col) ? values[p - indices.begin()] : 0;
   }
   return out;

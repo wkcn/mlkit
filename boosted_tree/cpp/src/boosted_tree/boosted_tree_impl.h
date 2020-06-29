@@ -7,11 +7,11 @@
 #include <boosted_tree/vec.h>
 
 #include <array>
-#include <string>
-#include <sstream>
 #include <mutex>
 #include <numeric>
 #include <queue>
+#include <sstream>
+#include <string>
 #include <vector>
 
 struct Node {

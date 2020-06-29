@@ -14,20 +14,27 @@ TEST(TestVec, test_op) {
   for (int i = 0; i < 3; ++i) {
     target[i] = a[i] + b[i];
   }
-  ASSERT_EQ(a + b, target);
+  ASSERT_EQ((a + b).tovector(), target);
 
   for (int i = 0; i < 3; ++i) {
     target[i] = a[i] - b[i];
   }
-  ASSERT_EQ(a - b, target);
+  ASSERT_EQ((a - b).tovector(), target);
 
   for (int i = 0; i < 3; ++i) {
     target[i] = a[i] * b[i];
   }
-  ASSERT_EQ(a * b, target);
+  ASSERT_EQ((a * b).tovector(), target);
 
   for (int i = 0; i < 3; ++i) {
     target[i] = a[i] / b[i];
   }
-  ASSERT_EQ(a / b, target);
+  ASSERT_EQ((a / b).tovector(), target);
+}
+
+TEST(TestVec, test_move) {
+  Vec<float> a{1, 2, 3};
+  Vec<float> b = a;
+  Vec<float> c = std::move(a);
+  ASSERT_EQ(b.tovector(), c.tovector());
 }

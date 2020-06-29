@@ -1,7 +1,5 @@
 from collections import defaultdict
-from mxnet import np, npx
-npx.set_np()
-npx.set_np_default_dtype(np.float32)
+import numpy as np
 import pandas
 
 class Node:

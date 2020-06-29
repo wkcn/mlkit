@@ -123,7 +123,7 @@ std::string BoostedTree::Impl::str() const {
     std::function<void(const int, const int)> F;
     F = [&](const int nid, const int height) {
       const Node &node = *nodes_[nid];
-      std::string space(height * 4, ' ');
+      std::string space(height, '\t');
       if (node.is_leaf) {
         ss << space << "predict: " << node.value << '\n';
       } else {

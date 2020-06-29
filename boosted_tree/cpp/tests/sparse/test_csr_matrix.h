@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include <initializer_list>
+#include <valarray>
 #include <vector>
 
 TEST(TestCSRMatrix, todense) {
@@ -46,12 +47,12 @@ TEST(TestCSRMatrix, getitem) {
                                           {0, 1, 1}, {1, 0, 1}, {2, 2, 1}};
   for (int r = 0; r < 3; ++r) {
     for (auto &order : orders) {
-      std::vector<int> left = smat[r].at(order.begin(), order.end());
-      std::vector<int> right(3);
+      std::valarray<int> left = smat[r].at(order.begin(), order.end());
+      std::valarray<int> right(3);
       for (int j = 0; j < 3; ++j) {
         right[j] = mat[r][order[j]];
       }
-      ASSERT_EQ(left, right);
+      ASSERT_EQ((left == right).min(), 1);
     }
   }
 }

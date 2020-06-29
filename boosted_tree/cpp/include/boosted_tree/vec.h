@@ -42,6 +42,11 @@ class Vec : public std::valarray<T> {
     }
   }
   Vec(const std::vector<T> &data) : Vec<T>(std::begin(data), std::end(data)) {}
+  Vec(Vec &) = default;
+  Vec(const Vec &) = default;
+  Vec(Vec &&) = default;
+  Vec& operator=(const Vec &) = default;
+  Vec& operator=(Vec &&) = default;
   T* data() {return &((*this)[0]);}
   const T* data() const {return &((*this)[0]);}
 
@@ -58,16 +63,15 @@ class Vec : public std::valarray<T> {
   DEF_VEC_OP_VEC_FUNC(/=)
 };
 
+#include "logging.h"
 template <typename T, typename VT>
 bool operator==(const Vec<T> &a, const VT &b) {
   auto pa = std::begin(a);
   auto pb = std::begin(b);
-  auto end_a = std::end(a);
-  auto end_b = std::end(b);
+  const auto end_a = std::end(a);
+  const auto end_b = std::end(b);
   for (; pa != end_a && pb != end_b; ++pa, ++pb) {
     if (*pa != *pb) return false;
-    ++pa;
-    ++pb;
   }
   return pa == end_a && pb == end_b;
 }

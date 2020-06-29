@@ -91,7 +91,7 @@ Vec<float> BoostedTree::Impl::predict(const CSRMatrix<float> &X) const {
   Vec<float> preds(N);
 #pragma omp parallel for num_threads(param_.n_jobs)
   for (int i = 0; i < N; ++i) {
-    CSRRow x = X[i];
+    CSRRow<float> x = X[i];
     preds[i] = predict_one(x);
   }
   return preds;
@@ -240,7 +240,7 @@ int BoostedTree::Impl::CreateNode(Vec<float> &integrals,
       node.value = split;
 
       std::vector<int> left_sample_ids, right_sample_ids;
-      CSRRow sfeat = XT_[best_info.feature_id];
+      CSRRow<float> sfeat = XT_[best_info.feature_id];
       Vec<float> feat = sfeat.at(sample_ids.begin(), sample_ids.end());
       for (int i = 0; i < num_samples; ++i) {
         /*
@@ -302,7 +302,7 @@ SplitInfo BoostedTree::Impl::GetExactSplitInfo(
     const Vec<float> &gradients, const float G_sum, const Vec<float> &hessians,
     const float H_sum) {
   // Basic exact greedy algorithm
-  CSRRow sfeat = XT_[feature_id];
+  CSRRow<float> sfeat = XT_[feature_id];
   const size_t num_samples = sample_ids.size();
   Vec<float> feat = sfeat.at(sample_ids.begin(), sample_ids.end());
   std::vector<int> inds(num_samples);
@@ -398,7 +398,7 @@ SplitInfo BoostedTree::Impl::GetApproxSplitInfo(
     const Vec<float> &gradients, const float G_sum, const Vec<float> &hessians,
     const float H_sum) {
   // Weighted quantile sketch
-  CSRRow sfeat = XT_[feature_id];
+  CSRRow<float> sfeat = XT_[feature_id];
   const size_t num_samples = sample_ids.size();
   Vec<float> feat = sfeat.at(sample_ids.begin(), sample_ids.end());
   std::vector<int> inds(num_samples);

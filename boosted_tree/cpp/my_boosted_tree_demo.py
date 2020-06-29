@@ -27,9 +27,10 @@ test_fname = 'data/agaricus.txt.test'
 
 param = bst.BoostedTreeParam()
 param.objective = 'binary:logistic'
+param.max_depth = 2
 param.learning_rate = 1
 param.n_estimators = 2
-param.tree_method = "auto"
+param.tree_method = "exact"
 param.sketch_eps = 0.03
 param.subsample = 1.0
 

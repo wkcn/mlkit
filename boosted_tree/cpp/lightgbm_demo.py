@@ -1,5 +1,5 @@
 import numpy as np
-import xgboost as xgb
+import lightgbm as lgb
 import matplotlib.pyplot as plt
 
 
@@ -20,25 +20,19 @@ def evaluate(preds, labels, prefix):
     rmse = compute_rmse(preds, labels)
     print(f"{prefix} RMSE: {rmse}")
 
+train_fname = './data/agaricus.txt.train'
+test_fname = './data/agaricus.txt.test'
 
 # read in data
-dtrain = xgb.DMatrix('./data/agaricus.txt.train')
-dtest = xgb.DMatrix('./data/agaricus.txt.test')
+dtrain = lgb.Dataset(train_fname, free_raw_data=True)
+dtest = lgb.Dataset(test_fname, free_raw_data=True)
 
-# specify parameters via map
-param = {'max_depth': 2, 'eta': 1, 'objective': 'binary:logistic'}
+param = {'max_depth': 2, 'learning_rate': 1, 'objective': 'binary', 'metric': ['binary_logloss', 'binary_error', 'rmse']}
 num_round = 2
-watch_list = [(dtest, 'eval'), (dtrain, 'train')]
-bst = xgb.train(param, dtrain, num_round, watch_list)
+bst = lgb.train(param, dtrain, num_round, valid_sets=[dtest])
 
-# make prediction
-train_preds = bst.predict(dtrain)
-evaluate(train_preds, dtrain.get_label(), 'Training')
-test_preds = bst.predict(dtest)
-evaluate(test_preds, dtest.get_label(), 'Testing')
-
-num_trees = num_round
+num_trees = bst.num_trees()
 print(f'Number of trees: {num_trees}')
 for i in range(num_trees):
-    xgb.plot_tree(bst, num_trees=i)
+    lgb.plot_tree(bst, tree_index=i)
 plt.show()

@@ -5,9 +5,11 @@
 
 #include <cfloat>
 #include <cstdlib>
+#include <functional>
 #include <iostream>
 #include <numeric>
 #include <set>
+#include <stack>
 #include <utility>
 #include <vector>
 
@@ -22,8 +24,12 @@ void BoostedTree::train(const CSRMatrix<float> &X, const Vec<float> &Y) {
   pImpl->train(X, Y);
 }
 
-Vec<float> BoostedTree::predict(const CSRMatrix<float> &X) {
+Vec<float> BoostedTree::predict(const CSRMatrix<float> &X) const {
   return pImpl->predict(X);
+}
+
+std::string BoostedTree::str() const {
+  return pImpl->str();
 }
 
 BoostedTree::Impl::Impl(const BoostedTreeParam &param) : param_(param) {
@@ -80,7 +86,7 @@ void BoostedTree::Impl::train(const CSRMatrix<float> &X, const Vec<float> &Y) {
   }
 }
 
-Vec<float> BoostedTree::Impl::predict(const CSRMatrix<float> &X) {
+Vec<float> BoostedTree::Impl::predict(const CSRMatrix<float> &X) const {
   const int N = X.length();
   Vec<float> preds(N);
 #pragma omp parallel for num_threads(param_.n_jobs)
@@ -91,7 +97,7 @@ Vec<float> BoostedTree::Impl::predict(const CSRMatrix<float> &X) {
   return preds;
 }
 
-float BoostedTree::Impl::predict_one(const CSRRow<float> &X) {
+float BoostedTree::Impl::predict_one(const CSRRow<float> &X) const {
   float out = 0;
   for (int root : trees) {
     out += predict_one_in_a_tree(X, root);
@@ -100,7 +106,7 @@ float BoostedTree::Impl::predict_one(const CSRRow<float> &X) {
 }
 
 float BoostedTree::Impl::predict_one_in_a_tree(const CSRRow<float> &X,
-                                               int root) {
+                                               int root) const {
   while (1) {
     const Node &node = *nodes_[root];
     if (node.is_leaf) return node.value;
@@ -109,6 +115,33 @@ float BoostedTree::Impl::predict_one_in_a_tree(const CSRRow<float> &X,
     root = is_left ? node.left : node.right;
   }
   return 0;
+}
+
+std::string BoostedTree::Impl::str() const {
+  const size_t num_trees = trees.size();
+  std::stringstream ss;
+  for (int t = 0; t < num_trees; ++t) {
+    ss << "Tree " << t << ":\n";
+    std::function<void(const int, const int)> F;
+    F = [&](const int nid, const int height) {
+      const Node &node = *nodes_[nid];
+      std::string space(height * 4, ' ');
+      if (node.is_leaf) {
+        ss << space << "predict: " << node.value << '\n';
+      } else {
+        ss << space << "f" << node.feature_id << "<" << node.value;
+        if (node.miss_left) ss << "or missing";
+        ss << '\n';
+        F(node.left, height + 1);
+        ss << space << "f" << node.feature_id << ">=" << node.value;
+        if (!node.miss_left) ss << "or missing";
+        ss << '\n';
+        F(node.right, height + 1);
+      }
+    };
+    F(trees[t], 1);
+  }
+  return ss.str();
 }
 
 int BoostedTree::Impl::GetNewNodeID() {

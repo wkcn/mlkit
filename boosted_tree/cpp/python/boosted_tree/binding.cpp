@@ -24,7 +24,8 @@ PYBIND11_MODULE(boosted_tree, m) {
   py::class_<BoostedTree>(m, "BoostedTree")
       .def(py::init<const BoostedTreeParam &>())
       .def("train", &BoostedTree::train)
-      .def("predict", &BoostedTree::predict);
+      .def("predict", &BoostedTree::predict)
+      .def("__str__", &BoostedTree::str);
 
   py::class_<CSRMatrix<float>>(m, "CSRMatrix").def(py::init<>());
 

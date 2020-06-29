@@ -7,6 +7,8 @@
 #include <boosted_tree/vec.h>
 
 #include <array>
+#include <string>
+#include <sstream>
 #include <mutex>
 #include <numeric>
 #include <queue>
@@ -60,11 +62,12 @@ class BoostedTree::Impl {
  public:
   Impl(const BoostedTreeParam &);
   void train(const CSRMatrix<float> &X, const Vec<float> &Y);
-  Vec<float> predict(const CSRMatrix<float> &X);
-  float predict_one(const CSRRow<float> &X);
+  Vec<float> predict(const CSRMatrix<float> &X) const;
+  float predict_one(const CSRRow<float> &X) const;
+  std::string str() const;
 
  private:
-  float predict_one_in_a_tree(const CSRRow<float> &X, int root);
+  float predict_one_in_a_tree(const CSRRow<float> &X, int root) const;
   int GetNewNodeID();
   int CreateNode(Vec<float> &integrals, const std::vector<int> &sample_ids,
                  const std::vector<int> &feature_ids, const int depth);

@@ -32,7 +32,8 @@ class BoostedTree {
   BoostedTree(const BoostedTreeParam &);
   virtual ~BoostedTree();
   void train(const CSRMatrix<float> &X, const Vec<float> &Y);
-  Vec<float> predict(const CSRMatrix<float> &X);
+  Vec<float> predict(const CSRMatrix<float> &X) const;
+  std::string str() const;
 
  public:
   static constexpr float MISSING_VALUE = nanf("");

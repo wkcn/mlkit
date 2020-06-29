@@ -40,6 +40,7 @@ test_X, test_Y = bst.ReadLibSVMFile(test_fname)
 
 model.train(train_X, train_Y)
 
+print(model)
 train_preds = model.predict(train_X)
 evaluate(train_preds, train_Y, 'Training')
 
